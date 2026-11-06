@@ -1,0 +1,21 @@
+.studio/
+__pycache__/
+.venv/
+.DS_Store
+.env
+.env.local
+.env.*
+!.env.example
+dist/
+node_modules/
+hosted_web/
+.vercel/
+.workflow-data/
+supabase/.temp/
+
+.playwright-cli/
+
+# Private drafts and intermediate generated assets
+output/
+research/
+references/

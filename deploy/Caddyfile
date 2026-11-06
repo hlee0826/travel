@@ -1,0 +1,37 @@
+{
+    admin off
+    persist_config off
+    auto_https off
+}
+
+:{$PORT:10000} {
+    route {
+        header {
+            -Server
+            Cache-Control "no-store"
+            X-Robots-Tag "noindex, nofollow, noarchive"
+            Strict-Transport-Security "max-age=86400"
+        }
+        @wrong_host not host {$MINHWA_PUBLIC_HOST}
+        respond @wrong_host "Unknown host" 421
+        basic_auth {
+            studio {env.MINHWA_PASSWORD_HASH}
+        }
+        request_body {
+            max_size 29MiB
+        }
+        reverse_proxy 127.0.0.1:4187 {
+            header_up Host 127.0.0.1:4187
+            header_up -Authorization
+        }
+    }
+    handle_errors {
+        header {
+            -Server
+            Cache-Control "no-store"
+            X-Robots-Tag "noindex, nofollow, noarchive"
+            Strict-Transport-Security "max-age=86400"
+        }
+        respond "{err.status_text}" {err.status_code}
+    }
+}

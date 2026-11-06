@@ -1,0 +1,24 @@
+# Build context is an allowlist. No local key, uploads, orders, or test output.
+**
+!Dockerfile
+!requirements.txt
+!server.py
+!generation.py
+!artifacts.py
+!studio.py
+!minhwa_workflow/
+!minhwa_workflow/__init__.py
+!minhwa_workflow/workflow.py
+!minhwa_workflow/style-anchors/
+!minhwa_workflow/style-anchors/*.png
+!fonts/
+!fonts/NotoSerifKR.ttf
+!fonts/OFL.txt
+!public/
+!public/**
+!deploy/
+!deploy/Caddyfile
+!deploy/start.py
+**/.env*
+**/__pycache__/**
+**/.DS_Store

@@ -2,7 +2,7 @@
 
 Create a new Korean minhwa-inspired painting using one pet photo for identity and four supplied paintings for style and composition. This folder is self-contained and can be copied into another project.
 
-Version: `minhwa-anchors-v3`. The prompt matches the tested local studio workflow. The website imports this module so both use the same art direction.
+Version: `minhwa-anchors-v4`. The prompt matches the tested local studio workflow. The website imports this module so both use the same art direction.
 
 ## Requirements
 
@@ -23,7 +23,7 @@ python3 minhwa_workflow/workflow.py \
 
 Choose `peony` or `lotus`. Missing image files fail preparation. Existing output files are never overwritten; choose a new run folder for each revision. The script resolves reference paths on the current computer, so regenerate the JSON after moving the folder or changing computers.
 
-The output JSON contains the built-in image tool's exact `prompt`, `referenced_image_paths`, and `transparent_background` arguments. Its attachment order is significant:
+The output JSON includes `reference_hashes` for integrity checking plus the built-in image tool's `prompt`, `referenced_image_paths`, and `transparent_background` arguments. Its attachment order is significant:
 
 | Image | File | Role |
 | --- | --- | --- |
@@ -77,7 +77,7 @@ Tests exercise both compositions, ordered readable references, missing inputs, i
 
 ## ComfyUI status
 
-ComfyUI is the selected future production engine, but this working version uses Codex's built-in image tool. There is no executable ComfyUI graph, installed checkpoint, adapter, or model download in this folder. A production implementation must separately condition identity and style, synthesize a fresh image, and pass the review criteria above. A low-change image-to-image filter does not meet the requirement.
+ComfyUI was an earlier proposed engine. The website now uses OpenAI directly; this standalone handoff uses Codex's built-in image tool. There is no executable ComfyUI graph, installed checkpoint, adapter, or model download in this folder. A production implementation must separately condition identity and style, synthesize a fresh image, and pass the review criteria above. A low-change image-to-image filter does not meet the requirement.
 
 ## Reference provenance and local data
 

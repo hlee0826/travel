@@ -1,0 +1,65 @@
+# Twenty business-model references for Minhwa
+
+Researched November 5, 2026. Priority: a customer's pet photo becomes custom digital artwork, with an independently purchasable digital file and an optional printed/framed physical product. This follows the product direction in `product-spec.md`. Rankings reflect usefulness to our planned business, not seller size, reputation, or fulfillment quality.
+
+All twenty below advertise digital-only purchasing and a framed physical option. Some framing is canvas rather than paper. Official product descriptions, format selectors, pricing pages, and FAQs support these findings; checkout, generation quality, and fulfillment were not tested. Search-indexed and fetched storefront versions sometimes differed. Specific uncertainties are retained below rather than treating advertised options as tested transactions.
+
+## Start with these five
+
+1. **PetMona:** closest simple preview → digital / paper print / framed paper flow.
+2. **Pet Pic Portraits:** closest broader AI preview → choose physical format flow.
+3. **Crown & Paw:** useful complete product selector and approval process.
+4. **PetPortraits.com:** useful explanation of AI preview versus artist-finished final artwork.
+5. **Adrianne Kimbell:** closest flowers-and-pet composition reference, with all three purchase tiers.
+
+## The twenty
+
+| # | Website and primary evidence | Digital and physical offering | Why it belongs / what to study |
+|---|---|---|---|
+| 1 | [PetMona pricing](https://petmona.app/pricing), [FAQ](https://petmona.app/faq), [framed product](https://petmona.app/framed-print) | Standalone HD PNG; unframed fine-art paper; framed archival matte paper. Physical tiers include the file. | Free watermarked preview before purchase; narrow, understandable product tiers. Framed production waits for final-version confirmation after payment. US/Canada physical delivery advertised. |
+| 2 | [Pet Pic Portraits digital](https://www.petpicportraits.com/shop/digital-download), [materials](https://www.petpicportraits.com/products), [process](https://www.petpicportraits.com/how-it-works) | Standalone digital files; unframed and framed paper; canvas and framed canvas. | AI preview before payment followed by human review. Useful example of choosing the artwork first and the product second. Physical delivery is US-only; digital is worldwide. |
+| 3 | [Crown & Paw — Contemporary Pet Portrait](https://crownandpaw.com/products/contemporary-pet-portrait) | Digital Download size; unframed enhanced matte paper; multiple wooden frame choices. Separate digital add-on also exists. | Photo upload, artist-created portrait, emailed proof, edits and approval. Strong reference for organizing size, frame, background, name and file choices. |
+| 4 | [PetPortraits.com — Cartoon Pet Portrait](https://petportraits.com/products/cartoon-pet-portrait-1-pet-v2) | Standalone digital file; paper poster; framed poster; framed canvas. | Discloses AI draft plus artist finish. Instant preview is explicitly not the final artwork; later proof and approval precede printing. Useful distinction if our production result can differ from the initial preview. |
+| 5 | [Adrianne Kimbell — Botanical Pet Portraits](https://adriannekimbelldesign.com/pet-portraits) | Digital-only; archival paper print plus digital; framed paper plus digital. | Pets composed with illustrated flowers and foliage. Manual commission with sketch/color reviews, deposit and final payment; especially relevant to our botanical art direction, less similar to instant generation. |
+| 6 | [Paw & Glory digital](https://www.pawandglory.com/products/digital-image-download), [unframed poster](https://www.pawandglory.com/en-us/products/the-general-custom-pet-poster), [framed portrait](https://www.pawandglory.com/en-us/products/the-knight-custom-pet-portrait) | Standalone high-resolution JPEG; unframed paper; framed paper; additional canvas products. | Distinctive themed pet art plus proof/approval. Study how a recognizable style becomes a gift product. Revision and automatic-approval conditions need careful reading. |
+| 7 | [Print Our Pet digital](https://printourpet.com/products/illustrated-digital-file), [poster](https://printourpet.com/products/pet-portrait-poster), [framed paper](https://printourpet.com/products/framed-pet-portrait) | Standalone custom digital file; unframed and framed paper; canvas separately listed. | Very close three-format catalog. Artwork is described as hand illustrated. Proof availability is conditional in its FAQ, so do not infer universal pre-production approval. |
+| 8 | [Ryze Ink — Personalised Pet Portrait](https://ryzeink.com/products/personalised-pet-portrait-from-your-photo) | Standalone digital file; unframed matte paper; ready-to-hang framed print. Separate digital add-on. | AI creation with human checking and emailed approval before printing. Compact format selector; UK delivery emphasis. US physical delivery not established. |
+| 9 | [Pincel Pencil — Watercolor Worlds](https://pincelpencil.com/products/watercolor-portraits), [process FAQ](https://pincelpencil.com/) | Digital portrait; poster; framed print; canvas. | Painterly style makes it relevant beyond a generic cartoon portrait. Markets human artists, emailed proof and revisions. File specifications and live per-format selector prices were not established. |
+| 10 | [MadPrints — custom pet portrait](https://shopmadprints.com/pages/custom-pet-portrait) | Digital-only PDF; unframed poster; framed poster. Digital can also be added to a physical order. | Clear output choices and pet/name/background customization. Markets human digital artists. Its FAQ says routine pre-production previews are not provided, unlike our proposed flow. |
+| 11 | [Portrait of a Pet digital](https://portraitofapet.com/products/digital-only-watercolor-portrait-of-your-pet), [paper and framed product](https://portraitofapet.com/products/museum-quality-matte-paper-poster) | Standalone high-resolution digital watercolor; unframed archival matte paper; black, white or wood frames. | Close painterly product model, with proof/revisions described on the physical product. Paper product identifies Gelato as vendor; this does not establish the seller's current fulfillment integration. |
+| 12 | [Studio624 — Illustrated Pet Portraits](https://studio-624.com/products/illustrated-pet-portraits) | Digital Download; unframed matte print; white, black or oak frame; stretched canvas. | Premium artist commission with work-in-progress collaboration. Useful for positioning custom illustration as an artwork. Manual email-based photo submission and multiweek production differ from our intended flow. |
+| 13 | [Jessie's Art Shop — Oil Style Pet Portrait](https://jessiesartshop.co.uk/products/custom-pet-portrait-oil-style) | Digital download; 5×7, A5 or A4 paper prints; framed choices. | Digital oil-paint aesthetic and explicit revisions/final approval. Useful smaller-studio example of a single portrait product with format variants. UK storefront; US fulfillment not verified. |
+| 14 | [But Poorly Drawn](https://butpoorlydrawn.com/) | Standalone JPG/transparent PNG; art print; framed art print. | Especially useful narrow-style positioning and simple three-tier pricing. A physical proof is not the purchased download: physical-order files are sold separately. Its intentionally rough aesthetic is very different from Minhwa. |
+| 15 | [Petrait Studio](https://www.petraitstudio.com/) | Digital; unframed paper; framed portrait; separate canvas tier. | Advertises AI plus human review, multiple styles and revisions. Close advertised product architecture; ordering route could not be fetched during research. Framed substrate and customer approval step were not established. Treat as a candidate requiring a live walkthrough. |
+| 16 | [Crown & Canvas — pet portrait from photo](https://crownandcanvas.us/pet-portrait-from-photo) | Digital download; poster; canvas; framed print. | Advertises several candidate versions, revisions and approval. Useful comparison for letting shoppers choose among generated/created candidates. Framed substrate and live order-start operation remain unverified. |
+| 17 | [PetLouvre — Minimalist portrait](https://petlouvre.com/products/minimalist-pet-portrait), [FAQ](https://petlouvre.com/pages/q-a) | Indexed official selector lists Digital Only, Unframed Print and several frames; optional digital add-on separately listed. | Close format structure and emailed-proof process. Direct fetch did not consistently expose dynamic controls; digital file specifications and paper substrate remain unverified. Lower-confidence candidate than the first group. |
+| 18 | [Frame Your Pets](https://www.frameyourpets.com/) | Standalone digital; gallery-wrap canvas; framed canvas. No paper print verified. | Very close free AI preview → pay → download or physical order flow. Important limit: digital file is advertised for prints only up to 5×7 inches. Physical shipping is US-only. |
+| 19 | [PetCera — Digital or Framed Canvas](https://petcera.com/product/personalised-custom-cartoon-pet-canvas/), [delivery policy](https://petcera.com/shipping-delivery/) | Digital-only emailed artwork or framed canvas. No unframed paper verified. | Photo-based custom scenes, approval and changes before production. Useful scene/composition commissioning reference. Cached product versions differ; live price and option operation were not tested. |
+| 20 | [PetToon Pix — Custom Pet Portraits](https://pettoonpix.com/product/custom-pet-portraits/) | Standalone high-resolution digital sized to A3; framed A4/A3/A2 portrait choices. | Clear pet-count, name, background and frame customization. Australia-focused; A2 is restricted to South Australia local pickup/delivery. US delivery and an unframed physical option were not established. |
+
+## Implications for our reskin
+
+These are design judgments based on the comparison, not claims about conversion performance:
+
+- Use PetMona and Pet Pic Portraits to study the sequence **photo → art preview → format selection**. Keep the digital product visibly purchasable on its own.
+- Use Crown & Paw and Print Our Pet to study size/frame choices. Our initial two sizes and three product types can be simpler than these catalogs.
+- Use Adrianne Kimbell and the watercolor sellers to study how composition and painterly detail are presented. A coherent pet-and-botanical scene is a stronger direction for Minhwa than copying a generic isolated pet head.
+- Show digital, unframed paper and framed paper as different deliverables. State whether physical orders include a downloadable file, its print dimensions and personal-use terms.
+- State precisely what the preview represents and when approval occurs. Avoid ambiguity between a quick sample, final printable artwork and a physical-product mockup.
+- Sell the Korean minhwa-inspired composition through finished art and details of peonies, butterflies or lotus. Whether that is commercially differentiated requires customer research; this list does not establish exclusivity.
+
+## Useful adjacent sellers, outside the twenty
+
+- [West & Willow](https://westandwillow.com/collections/best-sellers/products/custom-one-pet-portrait): paper/framing merchandising; digital verified as an add-on rather than a fresh standalone commission. Product-level paid-proof option conflicts with homepage FAQ wording.
+- [Welham & Co](https://welhamandco.com/products/custom-pet-portrait): watercolor/oil/sketch presentation, paper and canvas. [FAQ](https://welhamandco.com/pages/faq) says portraits are printed and digital copies are add-ons.
+- [Pop Your Pup](https://popyourpup.com/): useful physical catalog; only a digital add-on was verified in this research. Supporting evidence is in the batch notes.
+- [Sumipaw](https://sumipaw.art/): highly relevant Eastern ink composition reference, but sells physical hand-painted originals rather than the required digital/print model. Commission availability is restricted.
+
+Excluded from the strict twenty: Regal Paws says framing is coming soon; Family & Paw says digital-only ordering is not yet available; WattleAtelier advertises digital but the fetched selector showed only physical sizes; Daydreams and Wagwag had conflicting digital-product wording; Quipils displayed a prospective 2027 price list.
+
+## Supporting research and limits
+
+- [Batch A](../research/competitor-pets-a.md): Crown & Paw, Paw & Glory, PetMona, Crown & Canvas, Pincel Pencil, PetLouvre and adjacent sellers.
+- [Batch B](../research/competitor-pets-b.md): Print Our Pet, PetPortraits.com, Pet Pic Portraits, Frame Your Pets, Ryze Ink, PetCera and adjacent sellers.
+
+No customer photos uploaded, purchases made or fulfillment tests performed. No traffic, revenue, conversion or independent reputation claims established. This is a sourced competitor shortlist, not a motion-design audit or a certification of seller reliability. Product availability and regional shipping need rechecking before a purchase or detailed operational comparison.

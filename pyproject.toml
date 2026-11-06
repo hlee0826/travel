@@ -1,0 +1,14 @@
+[project]
+name = "minhwa-studio"
+version = "0.1.0"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+  "fastapi==0.162.0", "psycopg[binary]==3.3.8", "vercel-workflow==0.12.1",
+  "httpx==0.28.1", "Pillow>=12.1,<13", "pillow-heif>=1,<2", "certifi>=2025.1.31"
+]
+[dependency-groups]
+dev = ["uvicorn==0.54.0"]
+[tool.vercel]
+entrypoint = "app.main:app"
+[[tool.vercel.workflows]]
+entrypoint = "app.workflows:wf"

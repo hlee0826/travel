@@ -1,0 +1,30 @@
+# Creates a separate paid test service only after hosting approval.
+services:
+  - type: web
+    name: minhwa-testing
+    runtime: docker
+    plan: 1c-2g
+    region: ohio
+    numInstances: 1
+    autoDeployTrigger: off
+    disk:
+      name: minhwa-private-artwork
+      mountPath: /data/studio
+      sizeGB: 10
+    envVars:
+      - key: MINHWA_PUBLIC_ORIGIN
+        sync: false
+      - key: MINHWA_PASSWORD_HASH
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: MINHWA_IMAGE_PROVIDER
+        value: openai
+      - key: OPENAI_IMAGE_MODEL
+        value: gpt-image-2.6-sunburst
+      - key: OPENAI_REVIEW_MODEL
+        value: gpt-5-mini
+      - key: MINHWA_DAILY_BUDGET_CENTS
+        value: "30000"
+      - key: MINHWA_DATA_DIR
+        value: /data/studio

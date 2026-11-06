@@ -1,15 +1,16 @@
-"""Minhwa v3: identity photo plus four style/composition anchors. Standard library only."""
+"""Minhwa v4: identity photo plus four style/composition anchors. Standard library only."""
 import argparse
 import json
+import hashlib
 from pathlib import Path
 
-WORKFLOW_VERSION = 'minhwa-anchors-v3'
+WORKFLOW_VERSION = 'minhwa-anchors-v4'
 STYLE_ANCHORS = tuple(Path(__file__).resolve().parent / 'style-anchors' / name for name in (
     'peony-tuxedo-cat.png', 'peony-tabby-cat.png', 'lotus-corgi.png', 'bamboo-white-dog.png',
 ))
 
 
-def generation_inputs(source, style):
+def generation_inputs(source, style, identity='', feedback=''):
     if style not in ('peony', 'lotus'):
         raise ValueError('Choose peony or lotus.')
     source = Path(source).expanduser().resolve()
@@ -33,7 +34,12 @@ Match the anchors' traditional hand-painted visual language with matte mineral-p
 Exactly one pet. Keep ears and visible paws within safe margins. Do not invent unseen identifying markings from a cropped source. Leave breathing room around the face and butterfly.
 Do not copy any anchor's text, names, signatures, seals, watermarks, promotional borders, or frame. No text or stamps anywhere; the website adds the pet name separately.
 '''
-    return {'prompt': prompt, 'referenced_image_paths': [str(p) for p in references], 'transparent_background': False}
+    if identity:
+        prompt += '\nIdentity observations to verify against image 1 (the photograph always takes precedence if these notes are inaccurate; never invent the unseen):\n' + identity + '\n'
+    if feedback:
+        prompt += '\nCorrection priority for this fresh painting: ' + feedback + '\n'
+    return {'prompt': prompt, 'referenced_image_paths': [str(p) for p in references], 'transparent_background': False,
+            'reference_hashes': [hashlib.sha256(p.read_bytes()).hexdigest() for p in references]}
 
 
 def main():
