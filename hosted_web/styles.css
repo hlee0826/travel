@@ -176,7 +176,6 @@ select { display: block; width: 100%; padding: 12px; margin-top: 6px; border: 1p
 .faq-list details[open] summary::after { content: '−'; }
 .faq-list details p { color: var(--muted); font-size: .85rem; padding-right: 20px; margin-bottom: 23px; }
 .closing { background: #e9dfcd; padding: 55px 24px 50px; text-align: center; }
-.closing-seal { display: block; color: var(--primary); font: 1.4rem var(--display); margin-bottom: 18px; }
 .closing h2 { margin: 0 auto 26px; }
 .closing p { max-width: 52ch; margin: 0 auto 24px; color: var(--muted); font-size: .95rem; }
 .footer { background: var(--bg); padding: 45px max(5%,calc((100vw - 1140px)/2)) 25px; }
