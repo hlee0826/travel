@@ -24,6 +24,16 @@ class WorkflowTests(unittest.TestCase):
                 self.assertTrue(Path(path).is_absolute())
                 self.assertEqual(Path(path).read_bytes()[:8], b'\x89PNG\r\n\x1a\n')
 
+    def test_two_photo_roles_are_explicit_and_ordered(self):
+        face, body = workflow.STYLE_ANCHORS[:2]
+        inputs = workflow.generation_inputs(face, 'peony', body_source=body)
+        self.assertEqual(inputs['referenced_image_paths'], [str(face), str(body), *map(str, workflow.STYLE_ANCHORS)])
+        self.assertEqual(len(inputs['reference_hashes']), 6)
+        self.assertIn('Image 1 is the FACE IDENTITY photo', inputs['prompt'])
+        self.assertIn('Image 2 is the FULL-BODY IDENTITY photo', inputs['prompt'])
+        self.assertIn('distinctive facial expression', inputs['prompt'])
+        self.assertIn('images 3 and 4 as the primary composition', inputs['prompt'])
+
     def test_invalid_style_or_missing_image_fails(self):
         with self.assertRaises(ValueError):
             workflow.generation_inputs(workflow.STYLE_ANCHORS[0], 'unknown')

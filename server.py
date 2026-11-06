@@ -134,15 +134,17 @@ def job_path(job_id):
 
 
 def prepare_generation(job):
-    inputs = workflow.generation_inputs(job_path(job['id']) / 'source.png', job['style'])
     folder = job_path(job['id'])
+    face = folder / ('face.png' if (folder / 'face.png').exists() else 'source.png')
+    body = folder / 'body.png'
+    inputs = workflow.generation_inputs(face, job['style'], body_source=body if body.exists() else None)
     job['workflow_version'] = workflow.WORKFLOW_VERSION
     job['style_anchors'] = [p.name for p in workflow.STYLE_ANCHORS]
     save_json(folder / 'generation-inputs.json', inputs)
     (folder / 'request.txt').write_text(f'''Generate the pending Minhwa portrait {job['id']} in this local workspace. Art direction: {workflow.WORKFLOW_VERSION}.
 Read {folder / 'generation-inputs.json'} and inspect every image listed in referenced_image_paths.
-Call the built-in image generation tool using that JSON's prompt, referenced_image_paths, and transparent_background arguments. Attach all five actual image files in the listed order. Do not substitute text descriptions, omit anchors, use previous outputs, apply local filters, or call an external model API.
-Generate one or two candidates. Before attaching, inspect each against the identity photo and style anchors for likeness, traditional painting style, coherent anatomy, a fresh composition, and an unambiguous head-and-eye sightline to the butterfly. Revise failures.
+Call the built-in image generation tool using that JSON's prompt, referenced_image_paths, and transparent_background arguments. Attach every actual image file in the listed order. Do not substitute text descriptions, omit anchors, use previous outputs, apply local filters, or call an external model API.
+Generate one or two candidates. Before attaching, inspect each against both identity photos and the style anchors for exact facial likeness and expression, body proportions and markings, traditional painting style, coherent anatomy, and a fresh composition. Revise failures.
 Save the outputs in this workspace, then run:
 .venv/bin/python studio.py complete {job['id']} /absolute/path/candidate-1.png [/absolute/path/candidate-2.png]
 The website will detect the completed artwork. Do not replace the source photo or style anchors.
@@ -151,7 +153,7 @@ The website will detect the completed artwork. Do not replace the source photo o
 
 def public_job(job):
     request = None if job['demo'] or job.get('generation_provider') == 'openai' else (job_path(job['id']) / 'request.txt').read_text()
-    visible = {k: v for k, v in job.items() if k not in ('session', 'attempts', 'submit_key', 'source_hash', 'identity')}
+    visible = {k: v for k, v in job.items() if k not in ('session', 'attempts', 'submit_key', 'source_hash', 'source_hashes', 'identity')}
     visible['candidates'] = [{k: v for k, v in c.items() if k not in ('usage', 'request_id', 'reference_hashes', 'quality_report')}
         for c in job['candidates'] if c.get('review_status', 'approved') == 'approved']
     visible['can_retry'] = (job['status'] in ('ready', 'rejected', 'failed') and job['completed_batches'] < 2
@@ -239,28 +241,35 @@ def generate_artwork(job_id, generator, reviewer=None):
     workspace = folder / 'attempts' / attempt['id']
     workspace.mkdir(parents=True, exist_ok=True)
     try:
-        photo, photo_meta = provider_call(job, 'checking_photo', lambda: reviewer.photo(folder / 'source.png', job['session']))
+        face = folder / ('face.png' if (folder / 'face.png').exists() else 'source.png')
+        body = folder / 'body.png'
+        body_source = body if body.exists() else None
+        photo, photo_meta = provider_call(job, 'checking_photo', lambda: reviewer.photo(face, job['session'], body_source=body_source))
         save_json(workspace / 'photo-review.json', {'verdict': photo, **photo_meta})
-        if not (photo['usable'] and photo['pet_count'] == 1 and photo['species'].lower() in ('cat', 'dog')
-                and photo['face_visible'] and photo['details_clear']):
+        acceptable = (photo['usable'] and photo['pet_count'] == 1 and photo['species'].lower() in ('cat', 'dog')
+                      and photo['same_pet'] and photo['face_visible'] and photo['details_clear'])
+        if body_source:
+            acceptable = acceptable and photo['body_visible'] and photo['markings_clear']
+        if not acceptable:
             with LOCK:
                 attempt['status'] = 'needs_photo'
-                update_job(job, status='needs_photo', error=photo['reason'] or 'Please choose a clear photo of one cat or dog.')
+                update_job(job, status='needs_photo', error=photo['reason'] or 'Please add a clear face photo and full-body photo of the same pet.')
             return
         identity = photo['identity'] + '\nUnseen or uncertain: ' + photo['unseen_features']
-        inputs = workflow.generation_inputs(folder / 'source.png', job['style'], identity, FEEDBACK.get(job.get('feedback'), ''))
+        inputs = workflow.generation_inputs(face, job['style'], identity, FEEDBACK.get(job.get('feedback'), ''), body_source=body_source)
         save_json(workspace / 'inputs.json', inputs)
         raw, metadata = provider_call(job, 'painting', lambda: generator.generate(inputs, job['session']))
         raw, dimensions = image_bytes(raw)
         if dimensions != IMAGE_SIZE:
             raise ValueError('The returned artwork has an unexpected size. The studio will check this attempt.')
-        if hashlib.sha256(raw).hexdigest() == job['source_hash']:
+        if hashlib.sha256(raw).hexdigest() in ({job['source_hash']} | set(job.get('source_hashes', {}).values())):
             raise ValueError('The returned artwork repeats the source photo. It cannot be accepted.')
         artwork = workspace / 'artwork.png'
         save_bytes(artwork, raw)
         save_json(workspace / 'generation.json', metadata)
+        anchor_start = 2 if body_source else 1
         quality, review_meta = provider_call(job, 'checking_artwork', lambda: reviewer.artwork(
-            folder / 'source.png', artwork, inputs['referenced_image_paths'][1:], job['style'], identity, job['session']))
+            face, artwork, inputs['referenced_image_paths'][anchor_start:], job['style'], identity, job['session'], body_source=body_source))
         save_json(workspace / 'artwork-review.json', {'verdict': quality, **review_meta})
         with LOCK:
             candidate_id = attempt['id']
@@ -435,7 +444,8 @@ class Handler(BaseHTTPRequestHandler):
                     candidate = next((c for c in job['candidates'] if c['url'].endswith('/' + match[2])), None)
                     if candidate and candidate.get('artifacts_version'):
                         return self.send(200, (job_path(match[1]) / 'artifacts' / candidate['id'] / 'preview.png').read_bytes(), 'image/png')
-                    return self.send(200, (job_path(match[1]) / match[2]).read_bytes(), 'image/png')
+                    filename = 'face.png' if match[2] == 'source.png' and (job_path(match[1]) / 'face.png').exists() else match[2]
+                    return self.send(200, (job_path(match[1]) / filename).read_bytes(), 'image/png')
                 match = re.fullmatch(r'/api/orders/([a-f0-9]{24})/download/(png|jpeg|print)', path)
                 if match:
                     session, _ = self.session()
@@ -464,7 +474,7 @@ class Handler(BaseHTTPRequestHandler):
             if self.headers.get('Content-Type', '').split(';')[0] != 'application/json':
                 raise ValueError('Use a JSON request.')
             length = int(self.headers.get('Content-Length', '0'))
-            if not 0 < length <= 29 * 1024 * 1024:
+            if not 0 < length <= 58 * 1024 * 1024:
                 return self.send(413, {'error': 'This upload is too large.'})
             body = json.loads(self.rfile.read(length))
             if not isinstance(body, dict):
@@ -484,36 +494,42 @@ class Handler(BaseHTTPRequestHandler):
                     quote(preference, preferred_size)
                     submit_key = body.get('key')
                     if not demo and GENERATOR and (not isinstance(submit_key, str) or not ID.fullmatch(submit_key)):
-                        raise ValueError('The upload reference is missing. Please select your photo again.')
-                    raw, dimensions = None, None
+                        raise ValueError('The upload reference is missing. Please select both photos again.')
+                    face_raw, body_raw, dimensions, body_dimensions = None, None, None, None
                     if not demo:
                         if body.get('rights') is not True:
-                            raise ValueError('Confirm you may use this photo.')
+                            raise ValueError('Confirm you may use these photos.')
                         if GENERATOR and body.get('generation_consent') is not True:
-                            raise ValueError('Confirm this photo may be sent to OpenAI to create your portrait.')
-                        encoded = body.get('image', '')
-                        if not isinstance(encoded, str):
-                            raise ValueError('Choose a pet photo.')
-                        try:
-                            raw, dimensions = image_bytes(base64.b64decode(encoded, validate=True))
-                        except (binascii.Error, TypeError) as exc:
-                            raise ValueError('The upload was not a valid image.') from exc
-                        if min(dimensions) < 600:
-                            raise ValueError('Please choose a clearer photo, at least 600 pixels wide and tall.')
-                    source_hash = hashlib.sha256(raw).hexdigest() if raw else None
+                            raise ValueError('Confirm these photos may be sent to OpenAI to create your portrait.')
+                        prepared = {}
+                        for role, label in (('face','face'), ('body','full-body')):
+                            encoded = body.get(role + '_image', '')
+                            if not isinstance(encoded, str) or not encoded:
+                                raise ValueError(f'Choose a {label} photo.')
+                            try:
+                                raw, photo_dimensions = image_bytes(base64.b64decode(encoded, validate=True))
+                            except (binascii.Error, TypeError) as exc:
+                                raise ValueError(f'The {label} upload was not a valid image.') from exc
+                            if min(photo_dimensions) < 600:
+                                raise ValueError(f'Please choose a clearer {label} photo, at least 600 pixels wide and tall.')
+                            prepared[role] = (raw, photo_dimensions, hashlib.sha256(raw).hexdigest())
+                        face_raw, dimensions = prepared['face'][:2]
+                        body_raw, body_dimensions = prepared['body'][:2]
+                    source_hashes = {role:prepared[role][2] for role in ('face','body')} if not demo else None
+                    source_hash = hashlib.sha256((source_hashes['face'] + source_hashes['body']).encode()).hexdigest() if source_hashes else None
                     if submit_key:
                         existing = next((j for j in all_jobs() if j['session'] == session and j.get('submit_key') == submit_key), None)
                         if existing:
                             if (existing.get('source_hash'), existing['name'], existing['style']) != (source_hash, name.strip(), body['style']):
-                                raise ValueError('This upload reference was used for another photo or selection. Please select your photo again.')
+                                raise ValueError('This upload reference was used for other photos or selections. Please select both photos again.')
                             return self.send(200, public_job(existing))
                     if len([j for j in all_jobs() if j['session'] == session]) >= 50:
                         raise ValueError('This session has reached its project limit. Please contact the studio.')
                     job_id = secrets.token_hex(12)
                     folder = job_path(job_id)
                     folder.mkdir(parents=True)
-                    job = {'id': job_id, 'session': session, 'name': name.strip(), 'style': body['style'], 'demo': demo, 'status': 'ready' if demo else 'awaiting_artwork', 'created': time.time(), 'completed_batches': 1 if demo else 0, 'candidates': [], 'source': None, 'source_dimensions': dimensions, 'error': None, 'workflow_version': workflow.WORKFLOW_VERSION}
-                    job.update(submit_key=submit_key, source_hash=source_hash, consent_at=time.time() if not demo else None,
+                    job = {'id': job_id, 'session': session, 'name': name.strip(), 'style': body['style'], 'demo': demo, 'status': 'ready' if demo else 'awaiting_artwork', 'created': time.time(), 'completed_batches': 1 if demo else 0, 'candidates': [], 'source': None, 'source_dimensions': dimensions, 'body_dimensions': body_dimensions, 'error': None, 'workflow_version': workflow.WORKFLOW_VERSION}
+                    job.update(submit_key=submit_key, source_hash=source_hash, source_hashes=source_hashes, consent_at=time.time() if not demo else None,
                                product_preference=preference, size_preference=preferred_size)
                     if demo:
                         asset = STYLES[job['style']][1]
@@ -523,7 +539,8 @@ class Handler(BaseHTTPRequestHandler):
                             size = list(im.size)
                         job['candidates'] = [{'id': 'sample', 'url': f'/assets/{asset}', 'dimensions': size}]
                     else:
-                        save_bytes(folder / 'source.png', raw)
+                        save_bytes(folder / 'face.png', face_raw)
+                        save_bytes(folder / 'body.png', body_raw)
                         job['source'] = f'/media/{job_id}/source.png'
                         prepare_generation(job)
                     if not demo:
