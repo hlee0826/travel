@@ -6,7 +6,7 @@ Main repository: [hlee0826/travel](https://github.com/hlee0826/travel). Live pri
 
 # Local development
 
-A functioning local pet-art studio: upload a cat or dog photo, generate a new minhwa-inspired painting, review it, choose a keepsake, and download the approved artwork. Checkout and fulfillment remain simulated. The server binds only to this computer.
+A functioning local pet-art studio: upload a face photo and full-body photo of the same cat or dog, generate a new minhwa-inspired painting, review it, choose a keepsake, and download the approved artwork. Checkout and fulfillment remain simulated. The server binds only to this computer.
 
 ## Start
 
@@ -22,11 +22,11 @@ API mode requires `MINHWA_IMAGE_PROVIDER=openai`, `OPENAI_API_KEY`, Images Reque
 
 ## Working flow
 
-1. Upload JPEG, PNG, WebP or HEIC, up to 20 MB / 40 megapixels, at least 600 pixels on each edge. Consent is required. Files are decoded, orientation-corrected, normalized and stripped of metadata.
-2. A photo check requires one identifiable cat or dog with clear facial features. Rejected photos never reach the image endpoint.
-3. The durable local queue creates one high-quality 2432 × 3040 painting using the original photo plus all four actual style references. The photo supplies identity only; the painting gets a fresh pose and botanical setting. No previous output is used as a retry reference.
-4. Automated review checks likeness, markings, anatomy, painted appearance, fresh setting, chosen garden, butterfly sightline, safe margins and unwanted text. A result that passes all nine checks is released automatically for customer review. Any failed or uncertain criterion keeps the result private for explicit studio review.
-5. The customer compares the approved painting with their photo and explicitly approves it. Corrections can request a fresh interpretation while retaining earlier approved work.
+1. Upload one face photo and one full-body photo of the same pet. JPEG, PNG, WebP or HEIC files may be up to 20 MB / 40 megapixels each and must be at least 600 pixels on each edge. Consent is required. Files are decoded, orientation-corrected, normalized and stripped of metadata.
+2. A joint photo check requires one identifiable cat or dog, confirms both photos show the same pet, and checks facial clarity, body visibility and markings. Rejected photos never reach the image endpoint.
+3. The durable local queue creates one high-quality 2432 × 3040 painting using both photos plus all four actual style references. The face photo governs facial geometry and expression; the full-body photo governs silhouette, proportions, coat and markings. No previous output is used as a retry reference.
+4. Automated review checks facial likeness and expression, markings, body proportions, anatomy, painted appearance, fresh setting, chosen garden, scene interaction, safe margins and unwanted text. A result that passes every check is released automatically for customer review. Any failed or uncertain criterion stays private for explicit studio review.
+5. The customer compares the approved painting with their face photo and explicitly approves it. Corrections can request a fresh interpretation while retaining earlier approved work.
 6. Choose digital, print or natural-oak framed print. Physical sizes are 8 × 10, 12 × 16 and 16 × 20 inches. Place a clearly labeled test order; no payment or supplier is contacted.
 7. PNG/JPEG downloads use the saved approved master, including the optional name. The preview watermark is separate. A 12 × 16 sheet centers the complete 12 × 15 painting with half-inch top/bottom borders; it never crops the artwork.
 
@@ -49,11 +49,11 @@ Manual mode still supports `studio.py complete JOB_ID /absolute/path/artwork.png
 
 ## Art direction and saved files
 
-`minhwa_workflow/workflow.py` is the authoritative `minhwa-anchors-v4` brief. Image 1 supplies the pet's identity. Images 2–5 supply pigment, botanical drawing, composition and negative space. All four anchors are included for either garden. Original anchors remain unchanged; the bamboo advertisement's outer margins are cropped only for API transmission. Inputs are normalized/downscaled for transmission, with original hashes recorded. Missing or changed references block generation.
+`minhwa_workflow/workflow.py` is the authoritative `minhwa-anchors-v5-two-photo-identity` brief. Image 1 supplies face identity and expression; image 2 supplies body proportions, coat and markings. Images 3–6 supply pigment, botanical drawing, composition and negative space. All four anchors are included for either garden. Original anchors remain unchanged; the bamboo advertisement's outer margins are cropped only for API transmission. Inputs are normalized/downscaled for transmission, with original hashes recorded. Missing or changed references block generation.
 
 The pet and plants must share a traditional painted language, with the pet watching one nearby butterfly. No source-room background, photographic cutout, copied anchor identity, text, seal or signature. Optional names are rendered once into the master with bundled OFL-licensed Noto Serif KR. Likeness is reviewed, not mathematically guaranteed.
 
-`.studio/jobs/JOB_ID/` retains the normalized source, attempts, prompts, reference hashes, provider metadata, review findings and approved artifacts. Pending/rejected artwork and raw masters are not public static files. Session ownership restricts media, orders and downloads. Existing approved orders keep immutable snapshots.
+`.studio/jobs/JOB_ID/` retains the normalized face and body sources, attempts, prompts, reference hashes, provider metadata, review findings and approved artifacts. Pending/rejected artwork and raw masters are not public static files. Session ownership restricts media, orders and downloads. Existing approved orders keep immutable snapshots.
 
 ## Reliability and limits
 

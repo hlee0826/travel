@@ -76,11 +76,14 @@ class HostedTests(unittest.TestCase):
 
     def real(self):
         key=secrets.token_hex(12)
-        ticket=hashlib.sha256((self.session+key).encode()).hexdigest()[:24]
         output=io.BytesIO(); Image.new('RGB',(600,800),'red').save(output,'PNG'); raw=output.getvalue()
         with db.connect() as conn:
-            conn.execute("INSERT INTO minhwa.uploads(id,session_id,object_key,bytes,mime,expires) VALUES(%s,%s,%s,%s,'image/png',now()+interval '1 hour')",(ticket,self.session,ticket+'/original',len(raw)))
-        body={'key':key,'upload_id':ticket,'style':'peony','name':'Miso','rights':True,'generation_consent':True}
+            tickets={}
+            for role in ('face','body'):
+                ticket=hashlib.sha256((self.session+key+':'+role).encode()).hexdigest()[:24]
+                tickets[role]=ticket
+                conn.execute("INSERT INTO minhwa.uploads(id,session_id,object_key,bytes,mime,expires) VALUES(%s,%s,%s,%s,'image/png',now()+interval '1 hour')",(ticket,self.session,ticket+'/original',len(raw)))
+        body={'key':key,'face_upload_id':tickets['face'],'body_upload_id':tickets['body'],'style':'peony','name':'Miso','rights':True,'generation_consent':True}
         with patch('hosted.storage.read',return_value=raw),patch('hosted.storage.put'):
             doc=service.create_job(self.session,body)
         return doc,body
@@ -150,7 +153,7 @@ class HostedTests(unittest.TestCase):
 
     def test_paid_stage_is_never_repeated(self):
         doc,_=self.real(); attempt=doc['attempt_id']
-        photo={'verdict':{'usable':True,'pet_count':1,'species':'dog','face_visible':True,'details_clear':True,'identity':'white dog','unseen_features':'none','reason':'good'}}
+        photo={'verdict':{'usable':True,'pet_count':1,'species':'dog','same_pet':True,'face_visible':True,'body_visible':True,'details_clear':True,'markings_clear':True,'identity':'white dog','unseen_features':'none','reason':'good'}}
         with patch('hosted.pipeline.perform',return_value=photo) as perform:
             self.assertEqual(pipeline.run_stage(doc['id'],attempt,'checking_photo'),'continue')
             self.assertEqual(pipeline.run_stage(doc['id'],attempt,'checking_photo'),'continue')
@@ -175,8 +178,8 @@ class HostedTests(unittest.TestCase):
 
     def test_quality_gate_and_artifacts_publish_atomically(self):
         doc,_=self.real(); attempt=doc['attempt_id']
-        responses=[{'verdict':{'usable':True,'pet_count':1,'species':'cat','face_visible':True,'details_clear':True}},
-                   {'reference_hashes':['a']*5}, {'verdict':{k:True for k in pipeline.ART_FIELDS}},
+        responses=[{'verdict':{'usable':True,'pet_count':1,'species':'cat','same_pet':True,'face_visible':True,'body_visible':True,'details_clear':True,'markings_clear':True}},
+                   {'reference_hashes':['a']*6}, {'verdict':{k:True for k in pipeline.ART_FIELDS}},
                    {'candidate':{'id':attempt,'url':f'/media/{doc["id"]}/art-{attempt}.png','review_status':'approved','artifacts_version':1,'dimensions':[2432,3040]}}]
         with patch('hosted.pipeline.perform',side_effect=responses):
             for stage in pipeline.STAGES:
@@ -189,7 +192,7 @@ class HostedTests(unittest.TestCase):
 
     def test_flagged_art_stays_private(self):
         doc,_=self.real(); attempt=doc['attempt_id']
-        results=[{'verdict':{'usable':True,'pet_count':1,'species':'cat','face_visible':True,'details_clear':True}},
+        results=[{'verdict':{'usable':True,'pet_count':1,'species':'cat','same_pet':True,'face_visible':True,'body_visible':True,'details_clear':True,'markings_clear':True}},
                  {},{'verdict':{'likeness':False}}]
         with patch('hosted.pipeline.perform',side_effect=results):
             for stage in pipeline.STAGES[:3]:pipeline.run_stage(doc['id'],attempt,stage)
@@ -198,15 +201,15 @@ class HostedTests(unittest.TestCase):
         self.assertEqual(self.client.get(f'/media/{doc["id"]}/art-{attempt}.png').status_code,404)
         with self.assertRaises(ValueError):service.order(self.session,{'key':secrets.token_hex(12),'job_id':doc['id'],'candidate_id':attempt,'approved':True,'product':'digital','size':'digital'})
 
-    def test_actual_pipeline_keeps_five_references_and_immutable_downloads(self):
+    def test_actual_pipeline_keeps_six_references_and_immutable_downloads(self):
         doc,_=self.real(); attempt=doc['attempt_id']
         source=io.BytesIO();Image.new('RGB',(600,800),'red').save(source,'PNG')
         art=io.BytesIO();Image.new('RGB',pipeline.IMAGE_SIZE,'green').save(art,'PNG')
-        objects={('art',doc['id']+'/source.png'):source.getvalue()}
+        objects={('art',doc['id']+'/face.png'):source.getvalue(), ('art',doc['id']+'/body.png'):source.getvalue()}
         def put(bucket,key,raw,mime='image/png'):
             if (bucket,key) in objects:self.assertEqual(objects[bucket,key],raw)
             objects[bucket,key]=raw
-        photo={'usable':True,'pet_count':1,'species':'dog','face_visible':True,'details_clear':True,'identity':'white dog','unseen_features':'none','reason':'good'}
+        photo={'usable':True,'pet_count':1,'species':'dog','same_pet':True,'face_visible':True,'body_visible':True,'details_clear':True,'markings_clear':True,'identity':'white dog','unseen_features':'none','reason':'good'}
         quality={k:True for k in pipeline.ART_FIELDS};quality['reason']='passed'
         with patch.dict(os.environ,{'OPENAI_API_KEY':'test-only'}),patch('hosted.storage.read',side_effect=lambda b,k,**kw:objects[b,k]),patch('hosted.storage.put',side_effect=put),patch('hosted.pipeline.OpenAIReview') as reviewer,patch('hosted.pipeline.OpenAIImages') as images:
             reviewer.return_value.photo.return_value=(photo,{})
@@ -214,9 +217,9 @@ class HostedTests(unittest.TestCase):
             images.return_value.generate.return_value=(art.getvalue(),{})
             for stage in pipeline.STAGES:pipeline.run_stage(doc['id'],attempt,stage)
             inputs=images.return_value.generate.call_args.args[0]
-            self.assertEqual(len(inputs['referenced_image_paths']),5)
-            self.assertEqual(len(inputs['reference_hashes']),5)
-            self.assertIn('IDENTITY ONLY',inputs['prompt'])
+            self.assertEqual(len(inputs['referenced_image_paths']),6)
+            self.assertEqual(len(inputs['reference_hashes']),6)
+            self.assertIn('FACE IDENTITY',inputs['prompt'])
             self.assertEqual(len(reviewer.return_value.artwork.call_args.args[2]),4)
         self.assertIn(('art',f'{doc["id"]}/{attempt}/master.png'),objects)
         self.assertIn(('art',f'{doc["id"]}/{attempt}/print-12x16.png'),objects)
@@ -261,7 +264,7 @@ class HostedTests(unittest.TestCase):
             connect.assert_not_called()
 
     def test_upload_ticket_reuses_completed_upload_and_limits_size(self):
-        body={'key':secrets.token_hex(12),'bytes':4,'mime':'image/png'}
+        body={'key':secrets.token_hex(12),'role':'face','bytes':4,'mime':'image/png'}
         with patch('hosted.storage.signed_upload',return_value={'token':'scoped-upload-test-token'}) as sign,patch('hosted.storage.read',return_value=b'data') as read:
             ticket=service.upload_ticket(self.session,body)
             self.assertEqual(ticket['token'],'scoped-upload-test-token');read.assert_not_called()

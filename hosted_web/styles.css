@@ -222,11 +222,17 @@ select { display: block; width: 100%; padding: 12px; margin-top: 6px; border: 1p
 .field-title, fieldset legend { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 10px; }
 .field input[type=text] { width: 100%; padding: 12px; border: 1px solid #a49a8b; border-radius: 4px; background: var(--paper); color: var(--ink); }
 input::placeholder { color: var(--muted); }
-.upload { border: 1px dashed #9e705c; border-radius: 5px; padding: 22px; background: var(--paper); }
-.upload label { display: block; font-size: .9rem; font-weight: 600; margin-bottom: 13px; }
-.upload input { font-size: .77rem; max-width: 100%; }
-.upload input::file-selector-button { background: var(--pale); color: var(--primary); border: 1px solid #b8846e; border-radius: 3px; padding: 11px 12px; margin-right: 10px; cursor: pointer; }
-.upload .fine { margin: 12px 0 0; }
+.upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 10px; }
+.upload-card { position: relative; min-width: 0; border: 1px solid #b9ae9e; border-radius: 5px; padding: 10px; background: var(--paper); }
+.upload-card label { display: block; cursor: pointer; }
+.upload-title { display: block; font-size: .86rem; font-weight: 600; padding: 3px 2px 9px; }
+.upload-example { display: block; overflow: hidden; background: var(--surface); aspect-ratio: 4/5; }
+.upload-example img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.upload-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.upload-action { display: block; margin-top: 10px; background: var(--pale); color: var(--primary); border: 1px solid #b8846e; border-radius: 3px; padding: 10px 8px; font-size: .75rem; text-align: center; }
+.upload-card:hover .upload-action { background: #ead8cd; }
+.upload-input:focus-visible + label .upload-action { outline: 2px solid var(--primary); outline-offset: 2px; }
+.upload-note { margin: 0 0 22px; }
 .styles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .style-option { border: 1px solid #b9ae9e; border-radius: 4px; padding: 8px; cursor: pointer; font-size: .75rem; display: flex; gap: 9px; align-items: center; }
 .style-option:has(input:checked) { border-color: var(--primary); background: var(--pale); }
@@ -414,6 +420,12 @@ textarea { width: 100%; min-height: 180px; font-size: .78rem; background: var(--
   .styles { grid-template-columns: 1fr; }
   .steps { gap: 4px; font-size: .6rem; }
   .steps i { width: 8px; }
+}
+@media (max-width: 480px) {
+  .upload-grid { grid-template-columns: 1fr; gap: 18px; }
+  .upload-card { padding: 12px; }
+  .upload-example { aspect-ratio: 5/4; }
+  .upload-example img { object-position: center 38%; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
