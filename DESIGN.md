@@ -17,6 +17,8 @@ The CSS variables in `hosted_web/styles.css` are authoritative. Ivory #f7f3e9, l
 
 Georgia for display headings; system sans for forms, navigation, prices and body text. Warm red pill actions, square artwork displays, thin rules, compact 4px corners on form controls. Interface typography needs no external font service. Download masters use bundled OFL-licensed Noto Serif KR for English and Hangul names.
 
+The storefront logo is **Their Little World**, with **Pet Portrait Studio** below in small system-sans lettering. The approved organic **너의 정원** seal sits to the left, matching the combined height of the two text rows. `hosted_web/assets/neoui-jeongwon-seal.png` supplies its transparent ink shape; CSS masks it with the existing muted cinnabar `--primary` color. Header and footer share this lockup. The header switches to its existing mobile menu at 1100px to accommodate the longer name.
+
 ## Layout and behavior
 
 - Home: full-width Japandi room photograph with white headline, one supporting sentence and one action → three formats → three-step process → live sample configurator → two gardens → FAQ → final action.
