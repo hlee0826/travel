@@ -11,7 +11,7 @@ COPY server.py generation.py artifacts.py studio.py ./
 COPY minhwa_workflow/__init__.py minhwa_workflow/workflow.py ./minhwa_workflow/
 COPY minhwa_workflow/style-anchors ./minhwa_workflow/style-anchors/
 COPY fonts ./fonts/
-COPY public ./public/
+COPY hosted_web ./hosted_web/
 COPY deploy/Caddyfile deploy/start.py ./deploy/
 USER studio
 EXPOSE 10000

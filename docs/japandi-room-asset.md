@@ -2,7 +2,7 @@
 
 Generated with the built-in image-generation tool on November 5, 2026.
 
-Asset: `public/assets/japandi-room.png`.
+Asset: `hosted_web/assets/japandi-room.png`.
 
 The generated image supplies the room only. The website overlays the original portrait and its frame, preserving the artwork. Used in the framed-print product card and in the homepage configurator whenever the framed format is selected. The mockup is illustrative, not a promise of physical scale.
 

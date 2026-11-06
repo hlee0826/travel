@@ -68,7 +68,7 @@ The pet and plants must share a traditional painted language, with the pet watch
 ```sh
 .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/python -m unittest discover -s minhwa_workflow -v
-node --check public/app.js
+node --check hosted_web/app.js
 ```
 
 Current implementation evidence, live runs, owner feedback and remaining rollout checks are in [generation QA](docs/generation-qa.md). Automated tests use mocks; live trials are recorded separately. Physical print certification, a diverse pet benchmark, real payment processing and production hosting require separate validation.

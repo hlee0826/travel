@@ -2,7 +2,7 @@
 
 ## 12 × 16 inch revision
 
-Current website asset: `public/assets/japandi-hero-12x16.png`, edited with the built-in image-generation tool. The original room is preserved below. Frame scale is visually approximate, not a measured product rendering.
+Current website asset: `hosted_web/assets/japandi-hero-12x16.png`, edited with the built-in image-generation tool. The original room is preserved below. Frame scale is visually approximate, not a measured product rendering.
 
 ### Edit prompt
 
@@ -11,7 +11,7 @@ Edit the provided Japandi living-room hero photograph. Change ONLY the size and 
 The natural oak frame should represent a modest approximately 12-inch wide by 16-inch tall framed print, realistically scaled to the full-size sofa. The current art is much too large. Reduce it to about 44% of its current width and about 50% of its current height. In the 1672 x 941 composition, target the outer frame at roughly 200 pixels wide by 267 pixels tall, centered near x=1155, y=405. Thus its bottom is about y=538, leaving comfortable space above the sofa back. This is a small intimate painting, not a large statement artwork. Preserve the complete cat/peony/butterfly artwork without cropping it, fitting it with the ivory mat into the 3:4 outer frame.
 Seamlessly restore the warm plaster wall where the old large frame was. Keep slim natural oak material, realistic contact shadow and believable perspective. Preserve ALL other content: camera framing, sofa, cushions, vases, branches, coffee table, curtain, light direction, natural warmth and detailed photographic textures. Same wide landscape aspect ratio and high-end photographic quality. No added text, labels, measurements, people or extra art.
 
-Generated with the built-in image-generation tool. Saved asset: `public/assets/japandi-hero.png`. The existing `public/assets/peony-cat.png` is the artwork reference. The room is a marketing illustration; artwork/frame scale is illustrative.
+Generated with the built-in image-generation tool. Saved asset: `hosted_web/assets/japandi-hero.png`. The existing `hosted_web/assets/peony-cat.png` is the artwork reference. The room is a marketing illustration; artwork/frame scale is illustrative.
 
 ## Final prompt
 

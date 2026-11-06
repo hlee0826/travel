@@ -8,7 +8,6 @@ __pycache__/
 !.env.example
 dist/
 node_modules/
-hosted_web/
 .vercel/
 .workflow-data/
 supabase/.temp/

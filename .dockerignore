@@ -14,8 +14,8 @@
 !fonts/
 !fonts/NotoSerifKR.ttf
 !fonts/OFL.txt
-!public/
-!public/**
+!hosted_web/
+!hosted_web/**
 !deploy/
 !deploy/Caddyfile
 !deploy/start.py

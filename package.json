@@ -1,1 +1,1 @@
-{"private":true,"scripts":{"build:upload":"esbuild browser-upload.js --bundle --minify --format=esm --outfile=public/upload.js"},"dependencies":{"tus-js-client":"4.3.1"},"devDependencies":{"esbuild":"0.25.12"}}
+{"private":true,"scripts":{"build:upload":"esbuild browser-upload.js --bundle --minify --format=esm --outfile=hosted_web/upload.js"},"dependencies":{"tus-js-client":"4.3.1"},"devDependencies":{"esbuild":"0.25.12"}}

@@ -1,6 +1,6 @@
 # Selected reading-nook hero with the user's dog
 
-Generated with the built-in image-generation tool. Selected room: `public/assets/hero-options/hero-02-reading-nook.png`. Artwork insert: `output/pet-peonies-v3.png`, the latest completed painting derived from the user's dog photograph. Saved website asset: `public/assets/hero-options/hero-02-reading-nook-dog.png` (1672 × 941). The original room and original painting remain available. Physical frame scale is illustrative.
+Generated with the built-in image-generation tool. Selected room: `hosted_web/assets/hero-options/hero-02-reading-nook.png`. Artwork insert: `output/pet-peonies-v3.png`, the latest completed painting derived from the user's dog photograph. Saved website asset: `hosted_web/assets/hero-options/hero-02-reading-nook-dog.png` (1672 × 941). The original room and original painting remain available. Physical frame scale is illustrative.
 
 ## Final prompt
 

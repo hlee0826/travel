@@ -25,7 +25,7 @@ register_heif_opener(thumbnails=False)
 
 ROOT = Path(__file__).resolve().parent
 DATA = Path(os.environ.get('MINHWA_DATA_DIR', ROOT / '.studio')).resolve()
-PUBLIC = ROOT / 'public'
+PUBLIC = ROOT / 'hosted_web'
 GENERATOR = None
 REVIEWER = None
 WAKE = threading.Event()

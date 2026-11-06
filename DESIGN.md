@@ -13,7 +13,7 @@ Use those principles with our own copy and existing sample artwork. Do not copy 
 
 ## Palette and typography
 
-The CSS variables in `public/styles.css` are authoritative. Ivory #f7f3e9, light mineral #eee8da, ink #302e29, muted text #686052, cinnabar #a6372b, pale red selection #f4e6db, soft moss #e5e8dd. Paper-like backgrounds are an explicit reference choice, not a generic default.
+The CSS variables in `hosted_web/styles.css` are authoritative. Ivory #f7f3e9, light mineral #eee8da, ink #302e29, muted text #686052, cinnabar #a6372b, pale red selection #f4e6db, soft moss #e5e8dd. Paper-like backgrounds are an explicit reference choice, not a generic default.
 
 Georgia for display headings; system sans for forms, navigation, prices and body text. Warm red pill actions, square artwork displays, thin rules, compact 4px corners on form controls. Interface typography needs no external font service. Download masters use bundled OFL-licensed Noto Serif KR for English and Hangul names.
 
@@ -32,4 +32,4 @@ This remains a local MVP, not a live store. All prices are examples; checkout is
 
 ## Homepage hero photography
 
-The hero uses `public/assets/hero-options/hero-02-reading-nook-dog.png`: the selected Japandi reading nook with the user’s generated dog portrait in a natural oak frame. Desktop text sits on the shaded left; narrow screens place text below the painting with a bottom gradient. Prompt and provenance: `docs/reading-nook-dog-hero.md`.
+The hero uses `hosted_web/assets/hero-options/hero-02-reading-nook-dog.png`: the selected Japandi reading nook with the user’s generated dog portrait in a natural oak frame. Desktop text sits on the shaded left; narrow screens place text below the painting with a bottom gradient. Prompt and provenance: `docs/reading-nook-dog-hero.md`.

@@ -1,10 +1,10 @@
 # Japandi hero alternatives
 
-Generated with the built-in image-generation tool using `public/assets/peony-cat.png` as the artwork insert reference. All five final PNGs are saved in `public/assets/hero-options/`. These are alternatives for review; the active homepage image has not changed. Physical frame scale is approximate in these generated photographs.
+Generated with the built-in image-generation tool using `hosted_web/assets/peony-cat.png` as the artwork insert reference. All five final PNGs are saved in `hosted_web/assets/hero-options/`. These are alternatives for review; the active homepage image has not changed. Physical frame scale is approximate in these generated photographs.
 
 ## 1. Quiet console
 
-Asset: `public/assets/hero-options/hero-01-console.png`
+Asset: `hosted_web/assets/hero-options/hero-01-console.png`
 
 ### Final prompt
 
@@ -15,7 +15,7 @@ Straight-on, eye-level CLOSE interior vignette of a shallow floating oak console
 
 ## 2. Afternoon reading nook
 
-Asset: `public/assets/hero-options/hero-02-reading-nook.png`
+Asset: `hosted_web/assets/hero-options/hero-02-reading-nook.png`
 
 ### Final prompt
 
@@ -26,7 +26,7 @@ Intimate three-quarter-angle view into a cozy reading corner, camera close besid
 
 ## 3. At home on the sofa
 
-Asset: `public/assets/hero-options/hero-03-sofa-detail.png`
+Asset: `hosted_web/assets/hero-options/hero-03-sofa-detail.png`
 
 ### Final prompt
 
@@ -38,7 +38,7 @@ CRITICAL CAMERA DIRECTION: A distinctly oblique, cinematic 40-degree side view, 
 
 ## 4. Welcome-home corner
 
-Asset: `public/assets/hero-options/hero-04-entryway.png`
+Asset: `hosted_web/assets/hero-options/hero-04-entryway.png`
 
 ### Final prompt
 
@@ -50,7 +50,7 @@ Make the viewpoint unmistakably a view THROUGH A DOORWAY across a small entry no
 
 ## 5. A quiet cup of tea
 
-Asset: `public/assets/hero-options/hero-05-tea-corner.png`
+Asset: `hosted_web/assets/hero-options/hero-05-tea-corner.png`
 
 ### Final prompt
 

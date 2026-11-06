@@ -6,7 +6,7 @@ Both images were visually inspected: one coherent full-body pet, fine painted fu
 
 ## Peony cat
 
-Output: `public/assets/peony-cat.png`
+Output: `hosted_web/assets/peony-cat.png`
 
 ```text
 Use case: stylized-concept
@@ -21,7 +21,7 @@ Constraints: wholly original composition; exactly one cat; anatomically coherent
 
 ## Lotus dog
 
-Output: `public/assets/lotus-dog.png`
+Output: `hosted_web/assets/lotus-dog.png`
 
 ```text
 Use case: stylized-concept

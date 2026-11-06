@@ -76,16 +76,14 @@ or explicitly adapt that safety guard for your own disposable instance.
    environment variables. Do not upload the file. Keep preview credentials separate;
    generation is disabled for `VERCEL_ENV=preview`. Enable Vercel system environment
    variables for Workflow OIDC; keep `WORKFLOW_PUBLIC_MANIFEST` unset.
-6. Build the upload bundle and run `deploy/package_vercel.py` before every deployment.
-   Extract `dist/minhwa-vercel-source.tar.gz` into a clean release directory, copy
-   only `.vercel/project.json` for project linking, and deploy that directory.
-   The archive has an explicit runtime allowlist: no `.env*`, `.studio`, local photos, operator
-   exports, research files, tests, Render configuration, or `public/` directory.
-   `hosted_web/` is served only through FastAPI. **Do not deploy public/ as static
-   assets: that would bypass the password gate.** Inspect the Vercel build output
-   for the generated Workflow endpoints and authenticated asset routing. Do not
-   copy the workspace `.vercelignore` over the archive's generated version:
-   Vercel's wildcard negation handling previously omitted nested application files.
+6. GitHub is the source of truth. Website assets are tracked in `hosted_web/`,
+   served only through FastAPI; never create a `public/` folder because Vercel
+   serves it outside the password gate. Run `npm ci`, `npm run build:upload`, and
+   `python deploy/prepare_vercel.py` before committing frontend changes.
+   The committed upload bundle means a Git checkout contains every runtime asset.
+   Once connected, Vercel's Git integration deploys `main` to production and other
+   branches as previews. Production secrets remain in Vercel; preview generation stays disabled.
+   `deploy/package_vercel.py` remains available for manual release uploads.
 7. Set the custom domain `minhwa.pinnedby.com` on this project, then add only its
    subdomain DNS record using the exact target Vercel supplies. Do not change apex,
    www, nameservers, or another deployment's settings. Wait for HTTPS.
