@@ -81,8 +81,10 @@ or explicitly adapt that safety guard for your own disposable instance.
    serves it outside the password gate. Run `npm ci`, `npm run build:upload`, and
    `python deploy/prepare_vercel.py` before committing frontend changes.
    The committed upload bundle means a Git checkout contains every runtime asset.
-   Once connected, Vercel's Git integration deploys `main` to production and other
-   branches as previews. Production secrets remain in Vercel; preview generation stays disabled.
+   Vercel is connected to `hlee0826/travel`: pushes to `main` deploy production;
+   other branches create previews. Production secrets remain in Vercel. Previews
+   have no production credentials and require separate configuration before use;
+   preview image generation stays disabled.
    `deploy/package_vercel.py` remains available for manual release uploads.
 7. Set the custom domain `minhwa.pinnedby.com` on this project, then add only its
    subdomain DNS record using the exact target Vercel supplies. Do not change apex,
