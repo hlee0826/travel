@@ -20,6 +20,31 @@ TEST_DB = os.environ.get('MINHWA_TEST_DATABASE_URL')
 
 
 class PasswordTests(unittest.TestCase):
+    def test_session_exemption_keeps_global_and_portrait_caps(self):
+        doc = {'id': 'a'*24, 'session': 'b'*24, 'source_hash': 'c'*64,
+               'completed_batches': 0, 'candidates': []}
+        def reserve(exempt, budget=0, previous=0):
+            conn = Mock()
+            def query(sql, params=None):
+                result = Mock()
+                if 'FROM minhwa.attempts WHERE job_id=' in sql:
+                    result.fetchall.return_value = [{}] * previous
+                elif 'FROM minhwa.attempts a JOIN' in sql:
+                    result.fetchone.return_value = {'budget': budget, 'session_count': 6, 'photo_count': 3}
+                elif 'FROM minhwa.login_limits' in sql:
+                    result.fetchone.return_value = (1,) if exempt else None
+                return result
+            conn.execute.side_effect = query
+            with patch.dict(os.environ, {'MINHWA_DAILY_BUDGET_CENTS': '30000'}):
+                service.reserve(conn, doc.copy())
+        with self.assertRaisesRegex(ValueError, 'daily allowance'):
+            reserve(False)
+        reserve(True)
+        with self.assertRaisesRegex(ValueError, 'testing allowance'):
+            reserve(True, budget=30000)
+        with self.assertRaisesRegex(ValueError, 'portrait attempt allowance'):
+            reserve(True, previous=3)
+
     def test_desk_print_download_uses_owned_master(self):
         raw = io.BytesIO()
         Image.new('RGB', (800, 1000), '#a4b5c6').save(raw, 'PNG')

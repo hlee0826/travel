@@ -70,7 +70,9 @@ def reserve(conn, doc):
         (doc['session'], doc['source_hash'])).fetchone()
     if totals['budget'] + 300 > int(os.environ.get('MINHWA_DAILY_BUDGET_CENTS', '30000')):
         raise ValueError('The studio has reached its testing allowance. No painting was started.')
-    if totals['session_count'] >= 6 or totals['photo_count'] >= 3:
+    exempt = conn.execute('SELECT 1 FROM minhwa.login_limits WHERE key=%s AND resets>now()',
+                          ('allowance:' + doc['session'],)).fetchone()
+    if not exempt and (totals['session_count'] >= 6 or totals['photo_count'] >= 3):
         raise ValueError('The daily allowance for this session or photo has been reached.')
     attempt_id = secrets.token_hex(12)
     conn.execute('INSERT INTO minhwa.attempts(id,job_id,reserved_cents) VALUES(%s,%s,300)', (attempt_id,doc['id']))
