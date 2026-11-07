@@ -55,8 +55,7 @@ class StudioTests(unittest.TestCase):
         return headers['Set-Cookie'].split(';')[0]
 
     def create_job(self, cookie):
-        encoded = base64.b64encode(self.photo).decode()
-        status, job, _ = self.request('POST', '/api/jobs', {'face_image': encoded, 'body_image': encoded, 'name': '보리 <test>', 'style': 'peony', 'rights': True, 'generation_consent': True}, cookie)
+        status, job, _ = self.request('POST', '/api/jobs', {'image': base64.b64encode(self.photo).decode(), 'name': '보리 <test>', 'style': 'peony', 'rights': True, 'generation_consent': True}, cookie)
         self.assertEqual(status, 201)
         return job
 
@@ -66,16 +65,16 @@ class StudioTests(unittest.TestCase):
         self.assertEqual(job['status'], 'awaiting_artwork')
         self.assertNotIn('session', job)
         inputs = server.read_json(server.job_path(job['id']) / 'generation-inputs.json')
-        self.assertEqual(inputs['referenced_image_paths'], [str((server.job_path(job['id']) / 'face.png').resolve()), str((server.job_path(job['id']) / 'body.png').resolve()), *map(str, server.workflow.STYLE_ANCHORS)])
-        self.assertEqual(len(inputs['referenced_image_paths']), 6)
+        self.assertEqual(inputs['referenced_image_paths'], [str((server.job_path(job['id']) / 'source.png').resolve()), *map(str, server.workflow.STYLE_ANCHORS)])
+        self.assertEqual(len(inputs['referenced_image_paths']), 5)
         for path in inputs['referenced_image_paths']:
             with Image.open(path) as image:
                 image.verify()
-        self.assertIn('FACE IDENTITY', inputs['prompt'])
+        self.assertIn('IDENTITY ONLY', inputs['prompt'])
         self.assertIn('STYLE AND COMPOSITION ANCHORS', inputs['prompt'])
-        self.assertIn('images 3 and 4 as the primary', inputs['prompt'])
-        lotus = server.workflow.generation_inputs(server.job_path(job['id']) / 'face.png', 'lotus', body_source=server.job_path(job['id']) / 'body.png')
-        self.assertIn('image 5 as the primary', lotus['prompt'])
+        self.assertIn('images 2 and 3 as the primary', inputs['prompt'])
+        lotus = server.workflow.generation_inputs(server.job_path(job['id']) / 'source.png', 'lotus')
+        self.assertIn('image 4 as the primary', lotus['prompt'])
         self.assertIn('generation-inputs.json', job['request'])
         complete = studio.complete(job['id'], [self.image_path])
         self.assertEqual(complete['completed_batches'], 1)
@@ -110,8 +109,7 @@ class StudioTests(unittest.TestCase):
         self.assertEqual(status, 200)
         status, _, _ = self.request('GET', '/api/jobs/'+job['id'], cookie=stranger)
         self.assertEqual(status, 404)
-        invalid = base64.b64encode(b'not a photo').decode()
-        status, _, _ = self.request('POST', '/api/jobs', {'style':'peony','rights':True,'face_image':invalid,'body_image':invalid}, owner)
+        status, _, _ = self.request('POST', '/api/jobs', {'style':'peony','rights':True,'image':base64.b64encode(b'not a photo').decode()}, owner)
         self.assertEqual(status, 400)
         status, _, _ = self.request('POST', '/api/orders', {'job_id':job['id'],'approved':True,'candidate_id':'fake'}, owner)
         self.assertEqual(status, 400)
@@ -156,8 +154,7 @@ class StudioTests(unittest.TestCase):
             status, error, _ = self.request('POST', f"/api/jobs/{job['id']}/retry", {}, cookie)
             self.assertEqual(status, 400)
             self.assertIn('reference is missing', error['error'])
-            encoded = base64.b64encode(self.photo).decode()
-            status, _, _ = self.request('POST', '/api/jobs', {'face_image': encoded, 'body_image': encoded, 'style': 'peony', 'rights': True}, cookie)
+            status, _, _ = self.request('POST', '/api/jobs', {'image': base64.b64encode(self.photo).decode(), 'style': 'peony', 'rights': True}, cookie)
             self.assertEqual(status, 400)
             # Reading completed artwork never rebuilds a request with newer directions.
             self.assertEqual(self.request('GET', '/api/jobs/' + job['id'], cookie=cookie)[0], 200)

@@ -32,29 +32,20 @@ def perform(doc, attempt, stage, previous):
         return {'candidate':render_files(doc, attempt)}
     with tempfile.TemporaryDirectory(prefix='minhwa-') as directory:
         source = Path(directory)/'source.png'
-        body_source = None
-        if doc.get('source_hashes'):
-            source.write_bytes(storage.read('art', doc['id']+'/face.png'))
-            body_source = Path(directory)/'body.png'
-            body_source.write_bytes(storage.read('art', doc['id']+'/body.png'))
-            for role, path in (('face',source), ('body',body_source)):
-                if hashlib.sha256(path.read_bytes()).hexdigest() != doc['source_hashes'][role]:
-                    raise ValueError(f'{role.title()} source integrity check failed.')
-        else:
-            source.write_bytes(storage.read('art', doc['id']+'/source.png'))
-            if hashlib.sha256(source.read_bytes()).hexdigest() != doc['source_hash']:
-                raise ValueError('Source integrity check failed.')
+        source.write_bytes(storage.read('art', doc['id']+'/source.png'))
+        if hashlib.sha256(source.read_bytes()).hexdigest() != doc['source_hash']:
+            raise ValueError('Source integrity check failed.')
         review = OpenAIReview(required('OPENAI_API_KEY'), os.environ.get('OPENAI_REVIEW_MODEL','gpt-5-mini'))
         if stage == 'checking_photo':
-            verdict, metadata = review.photo(source, doc['session'], body_source=body_source)
+            verdict, metadata = review.photo(source, doc['session'])
             return {'verdict':verdict, 'metadata':metadata}
         photo = previous['checking_photo']['verdict']
         identity = photo['identity'] + '\nUnseen or uncertain: ' + photo['unseen_features']
-        inputs = generation_inputs(source, doc['style'], identity, FEEDBACK.get(doc.get('feedback'), ''), body_source=body_source)
+        inputs = generation_inputs(source, doc['style'], identity, FEEDBACK.get(doc.get('feedback'), ''))
         if stage == 'painting':
             raw, metadata = OpenAIImages(required('OPENAI_API_KEY'), os.environ.get('OPENAI_IMAGE_MODEL','gpt-image-2.6-sunburst')).generate(inputs, doc['session'])
             raw, dimensions = image_bytes(raw)
-            if dimensions != IMAGE_SIZE or hashlib.sha256(raw).hexdigest() in ({doc['source_hash']} | set((doc.get('source_hashes') or {}).values())):
+            if dimensions != IMAGE_SIZE or hashlib.sha256(raw).hexdigest() == doc['source_hash']:
                 raise ValueError('Artwork integrity check failed.')
             storage.put('art', f'{doc["id"]}/{attempt}/artwork.png', raw)
             return {'metadata':metadata, 'reference_hashes':inputs['reference_hashes']}
@@ -62,8 +53,7 @@ def perform(doc, attempt, stage, previous):
             raise ValueError('Reference integrity check failed.')
         artwork = Path(directory)/'artwork.png'
         artwork.write_bytes(storage.read('art', f'{doc["id"]}/{attempt}/artwork.png'))
-        anchor_start = 2 if body_source else 1
-        verdict, metadata = review.artwork(source, artwork, inputs['referenced_image_paths'][anchor_start:], doc['style'], identity, doc['session'], body_source=body_source)
+        verdict, metadata = review.artwork(source, artwork, inputs['referenced_image_paths'][1:], doc['style'], identity, doc['session'])
         return {'verdict':verdict, 'metadata':metadata}
 
 
@@ -119,12 +109,8 @@ def run_stage(job_id, attempt, stage):
         outcome = 'continue'
         if stage == 'checking_photo':
             v = result['verdict']
-            required = (v['usable'] and v['pet_count']==1 and v['species'].lower() in ('cat','dog') and
-                        v['same_pet'] and v['face_visible'] and v['details_clear'])
-            if doc.get('source_hashes'):
-                required = required and v['body_visible'] and v['markings_clear']
-            if not required:
-                doc.update(status='needs_photo', error=v.get('reason') or 'Please add a clear face photo and full-body photo of the same pet.')
+            if not (v['usable'] and v['pet_count']==1 and v['species'].lower() in ('cat','dog') and v['face_visible'] and v['details_clear']):
+                doc.update(status='needs_photo', error='Please choose a clear photo of one cat or dog with its face visible.')
                 outcome = 'stopped'
         elif stage == 'checking_artwork':
             if not all(result['verdict'].get(k) is True for k in ART_FIELDS if k != 'reason'):

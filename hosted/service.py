@@ -34,15 +34,12 @@ def upload_ticket(session, body):
     if not generation_enabled():
         raise ValueError('Live generation is not enabled in this environment.')
     key = identifier(body.get('key'))
-    role = body.get('role')
     size, mime = body.get('bytes'), body.get('mime')
-    if role not in ('face', 'body'):
-        raise ValueError('Choose whether this is the face photo or full-body photo.')
     if type(size) is not int or not 0 < size <= 20*1024*1024 or mime not in ('image/png','image/jpeg','image/webp','image/heic','image/heif'):
         raise ValueError('Choose a JPEG, PNG, WebP, or HEIC photo under 20 MB.')
     if not auth.rate_limit('upload:' + session, 30, 3600) or not auth.rate_limit('upload:global', 200, 86400):
         raise ValueError('The studio upload allowance has been reached. Please try later.')
-    ticket_id = hashlib.sha256((session + key + ':' + role).encode()).hexdigest()[:24]
+    ticket_id = hashlib.sha256((session + key).encode()).hexdigest()[:24]
     with db.connect() as conn:
         row = conn.execute('''INSERT INTO minhwa.uploads(id,session_id,object_key,bytes,mime,expires)
             VALUES(%s,%s,%s,%s,%s,now()+interval '2 hours') ON CONFLICT(id) DO NOTHING RETURNING *''',
@@ -90,41 +87,31 @@ def create_job(session, body):
         existing = conn.execute('SELECT document FROM minhwa.jobs WHERE session_id=%s AND submit_key=%s', (session,key)).fetchone()
     if existing:
         doc = existing['document']
-        if any(doc[k] != v for k,v in selected.items()) or doc['demo'] != demo or (not demo and doc.get('upload_ids') != {'face':body.get('face_upload_id'), 'body':body.get('body_upload_id')}):
-            raise ValueError('That submission reference belongs to another selection. Please select both photos again.')
+        if any(doc[k] != v for k,v in selected.items()) or doc['demo'] != demo or (not demo and doc['id'] != body.get('upload_id')):
+            raise ValueError('That submission reference belongs to another selection. Please select your photo again.')
         return doc
     if not demo and (not generation_enabled() or body.get('rights') is not True or body.get('generation_consent') is not True):
-        raise ValueError('Confirm you may use both photos and send them to OpenAI for generation.')
-    job_id, source_hash, dimensions, body_dimensions = secrets.token_hex(12), None, None, None
-    source_hashes, upload_ids = None, None
+        raise ValueError('Confirm you may use this photo and send it to OpenAI for generation.')
+    job_id, source_hash, dimensions = secrets.token_hex(12), None, None
     if not demo:
-        job_id = hashlib.sha256((session + key).encode()).hexdigest()[:24]
-        upload_ids = {'face':identifier(body.get('face_upload_id')), 'body':identifier(body.get('body_upload_id'))}
-        expected = {role:hashlib.sha256((session + key + ':' + role).encode()).hexdigest()[:24] for role in ('face','body')}
-        if upload_ids != expected:
-            raise ValueError('The two upload references do not match this submission.')
+        job_id = identifier(body.get('upload_id'))
+        if job_id != hashlib.sha256((session + key).encode()).hexdigest()[:24]:
+            raise ValueError('Upload reference does not match this submission.')
         with db.connect() as conn:
-            tickets = {role:conn.execute('SELECT * FROM minhwa.uploads WHERE id=%s AND session_id=%s AND expires>now()', (ticket_id,session)).fetchone() for role,ticket_id in upload_ids.items()}
-        if not all(tickets.values()):
-            raise ValueError('Upload permission expired. Please select both photos again.')
-        prepared = {}
-        for role, ticket in tickets.items():
-            uploaded = storage.read('uploads', ticket['object_key'], limit=20*1024*1024)
-            if len(uploaded) != ticket['bytes']:
-                raise ValueError(f'The {"face" if role == "face" else "full-body"} photo upload is incomplete. Please try again.')
-            raw, photo_dimensions = image_bytes(uploaded)
-            if min(photo_dimensions) < 600:
-                raise ValueError(f'Please choose a clearer {"face" if role == "face" else "full-body"} photo, at least 600 pixels wide and tall.')
-            prepared[role] = (raw, photo_dimensions, hashlib.sha256(raw).hexdigest())
-            storage.put('art', f'{job_id}/{role}.png', raw)
-        dimensions, body_dimensions = prepared['face'][1], prepared['body'][1]
-        source_hashes = {role:prepared[role][2] for role in ('face','body')}
-        source_hash = hashlib.sha256((source_hashes['face'] + source_hashes['body']).encode()).hexdigest()
+            ticket = conn.execute('SELECT * FROM minhwa.uploads WHERE id=%s AND session_id=%s AND expires>now()', (job_id,session)).fetchone()
+        if not ticket:
+            raise ValueError('Upload permission expired. Please select your photo again.')
+        uploaded = storage.read('uploads', ticket['object_key'], limit=20*1024*1024)
+        if len(uploaded) != ticket['bytes']:
+            raise ValueError('The upload is incomplete. Please try again.')
+        raw, dimensions = image_bytes(uploaded)
+        if min(dimensions) < 600:
+            raise ValueError('Please choose a clearer photo, at least 600 pixels wide and tall.')
+        source_hash = hashlib.sha256(raw).hexdigest()
+        storage.put('art', job_id + '/source.png', raw)
     doc = {'id':job_id, 'session':session, **selected, 'demo':demo, 'created':time.time(),
            'status':'ready' if demo else 'queued', 'source_hash':source_hash,
-           'source_hashes':source_hashes, 'upload_ids':upload_ids,
-           'source_dimensions':dimensions, 'body_dimensions':body_dimensions,
-           'source':None if demo else f'/media/{job_id}/source.png',
+           'source_dimensions':dimensions, 'source':None if demo else f'/media/{job_id}/source.png',
            'completed_batches':1 if demo else 0, 'candidates':[], 'error':None,
            'workflow_version':WORKFLOW_VERSION, 'generation_provider':'openai',
            'consent_at':None if demo else time.time()}

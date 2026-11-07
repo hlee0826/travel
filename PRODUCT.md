@@ -7,7 +7,7 @@ product
 US pet owners creating a personalized keepsake or gift, primarily on a phone or laptop.
 
 ## Product Purpose
-Turn two complementary pet photographs into minhwa-inspired artwork and choose a digital file, unframed print, or framed print. This local MVP tests the complete journey with optional OpenAI image generation, artwork approval, and simulated purchases. API generation uses credits; real payments and fulfillment are not implemented.
+Turn a pet photograph into minhwa-inspired artwork and choose a digital file, unframed print, or framed print. This local MVP tests the complete journey with optional OpenAI image generation, artwork approval, and simulated purchases. API generation uses credits; real payments and fulfillment are not implemented.
 
 ## Brand Personality
 Personal, considered, artful. Derive the artwork direction from the supplied peony and lotus references.
@@ -25,4 +25,4 @@ Generic breed portraits, cartoon simplification, pasted photographic cutouts, an
 Labeled inputs, keyboard operation, readable contrast, mobile upload support, announced status, and reduced motion, as required by the product spec.
 
 ## Implemented local generation
-Face photo plus full-body photo and four style anchors; one fresh painting per attempt; joint photo validation, automated art review and release when all checks pass, then owner approval. The face photo governs facial geometry and expression while the body photo governs silhouette, proportions, coat and markings. Flagged paintings require explicit studio review. Downloads preserve an immutable named master. Corrections retain both identity references. Payments and physical fulfillment remain simulated. See `docs/generation-qa.md` for validation limits.
+Original photo plus four style anchors; one fresh painting per attempt; photo validation, automated art review and release when all checks pass, then owner approval. Flagged paintings require explicit studio review. Downloads preserve an immutable named master. Corrections retain the original identity reference. Payments and physical fulfillment remain simulated. See `docs/generation-qa.md` for validation limits.

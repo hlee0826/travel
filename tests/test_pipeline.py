@@ -34,9 +34,8 @@ class PipelineTests(unittest.TestCase):
         threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
         self.photo = png((800, 1000), '#523315')
         self.art = png((2432, 3040), '#d6bba1')
-        self.verdict = {'usable': True, 'pet_count': 1, 'species': 'dog', 'same_pet': True,
-            'face_visible': True, 'body_visible': True, 'details_clear': True, 'markings_clear': True,
-            'identity': 'Upright ears; tan eyebrows; black coat.',
+        self.verdict = {'usable': True, 'pet_count': 1, 'species': 'dog', 'face_visible': True,
+            'details_clear': True, 'identity': 'Upright ears; tan eyebrows; black coat.',
             'unseen_features': 'Tail hidden.', 'reason': 'Clear face.'}
         self.quality = {k: True for k in ART_FIELDS if k != 'reason'} | {'reason': 'All visible criteria match.'}
         server.REVIEWER.photo.return_value = (self.verdict, {'usage': {'input_tokens': 500}})
@@ -61,8 +60,7 @@ class PipelineTests(unittest.TestCase):
         return r.status, data, headers
 
     def body(self):
-        encoded = base64.b64encode(self.photo).decode()
-        return {'key': secrets.token_hex(12), 'face_image': encoded, 'body_image': encoded,
+        return {'key': secrets.token_hex(12), 'image': base64.b64encode(self.photo).decode(),
                 'name': '보리', 'style': 'peony', 'rights': True, 'generation_consent': True}
 
     def create(self, body=None):
@@ -212,7 +210,7 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(status, 200)
         next_job = self.run_job(job)
         request = server.GENERATOR.generate.call_args.args[0]
-        self.assertEqual(len(request['referenced_image_paths']), 6)
+        self.assertEqual(len(request['referenced_image_paths']), 5)
         self.assertNotIn('art-', request['referenced_image_paths'][0])
         self.assertIn('patch locations', request['prompt'])
         self.assertIn('tan eyebrows', request['prompt'])

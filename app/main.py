@@ -201,7 +201,7 @@ def media(job_id: str, filename: str, request: Request):
     with db.connect() as conn:
         doc = db.job(conn, service.identifier(job_id), request.state.session)['document']
     if filename == 'source.png' and not doc['demo']:
-        key = job_id + ('/face.png' if doc.get('source_hashes') else '/source.png')
+        key = job_id+'/source.png'
     else:
         candidate = next((c for c in doc['candidates'] if c.get('review_status')=='approved' and filename==f'art-{c["id"]}.png'),None)
         if not candidate:

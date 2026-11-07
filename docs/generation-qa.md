@@ -1,17 +1,17 @@
 # Image generation implementation and QA — November 5, 2026
 
-The local upload → generated painting → automated review/release (studio review if flagged) → owner approval → simulated order → exact download flow is implemented and tested. The current workflow requires separate face and full-body photos of the same pet and passes both, in fixed role order, with four style anchors. The two live API runs documented below predate that two-photo upgrade and remain historical evidence only; they do not validate the current two-photo likeness workflow.
+The local upload → generated painting → automated review/release (studio review if flagged) → owner approval → simulated order → exact download flow is implemented and tested. This report distinguishes software behavior, two real API runs, owner feedback, and production-readiness work that remains.
 
 ## Requirement evidence
 
 | Requirement | Implemented behavior | Evidence |
 | --- | --- | --- |
 | Actual pet upload | JPEG/PNG/WebP/HEIC decode, orientation, metadata removal, size/pixel limits, consent | HTTP validation tests; real source uploaded through browser |
-| Appropriate photos | Joint same-pet validation, with face/detail checks for the face photo and body/marking checks for the full-body photo | Bad-photo tests make zero image calls; mismatched or incomplete identity evidence is rejected |
-| Use the references | Face and full-body identity photos plus all four actual anchors; recorded hashes and ordered inputs | Six-image provider payload tests; workflow-order and integrity tests |
+| Appropriate photo | Structured one-pet, face and clarity check before painting | Bad-photo test makes zero image calls; both live photos accepted |
+| Use the references | Original identity photo plus all four actual anchors; recorded hashes and ordered inputs | Provider payload tests; saved inputs for both live attempts |
 | Their little world | Fresh botanical painting, coherent butterfly gaze, no source room or photographic cutout | Two live outputs visually reviewed; all nine automated criteria passed |
 | Recognizable identity | Identity analysis, photo precedence, source comparison, correction choices | Owner rated first peony painting **4–5/5: recognizably my dog** |
-| Safe retries | Both original identity photos and all anchors reused; previous paintings/order snapshots retained | Correction/retry and immutable-order tests |
+| Safe retries | Original photo and anchors reused, previous paintings/order snapshots retained | Correction/retry and immutable-order tests |
 | Refresh/recovery | Idempotent submission; persistent serial queue; uncertain requests held without automatic repeat | Queue/recovery tests; live lotus page refreshed during painting, one attempt recorded |
 | Approval gates | All nine checks true releases artwork automatically; flagged candidates stay private; customer approval still gates checkout | Passing release, flagged media/order rejection and unchecked checkout rejection tests |
 | Exact downloads | Saved named PNG/JPEG master; separate watermarked preview | Actual browser PNG and JPEG downloads matched corresponding masters byte-for-byte |

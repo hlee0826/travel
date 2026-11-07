@@ -53,9 +53,7 @@ def main():
         with db.connect() as conn:
             doc=db.job(conn,args.job)['document']
             reviews=conn.execute('SELECT name,result FROM minhwa.steps WHERE attempt_id=%s',(doc['attempt_id'],)).fetchall()
-        sources = ([('face.png',args.job+'/face.png'),('body.png',args.job+'/body.png')]
-                   if doc.get('source_hashes') else [('source.png',args.job+'/source.png')])
-        for filename,key in [*sources, ('painting.png',f'{args.job}/{doc["attempt_id"]}/artwork.png')]:
+        for filename,key in [('source.png',args.job+'/source.png'),('painting.png',f'{args.job}/{doc["attempt_id"]}/artwork.png')]:
             output=args.directory/filename
             output.write_bytes(storage.read('art',key));output.chmod(0o600)
         output=args.directory/'review.json';output.write_text(json.dumps(reviews,indent=2));output.chmod(0o600)
