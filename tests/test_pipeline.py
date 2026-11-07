@@ -155,6 +155,16 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual(im.size, (2432, 3243))
             self.assertEqual(im.crop((0, 101, 2432, 3141)).tobytes(), master.tobytes())
         self.assertEqual(self.request('POST', '/api/orders', order)[1], saved)
+        desk_order = order | {'key': secrets.token_hex(12), 'size': '5x7'}
+        status, desk, _ = self.request('POST', '/api/orders', desk_order)
+        self.assertEqual(status, 201)
+        desk_path = f"/api/orders/{desk['id']}/download/print"
+        desk_raw = self.request('GET', desk_path)[1]
+        with Image.open(io.BytesIO(desk_raw)) as im, Image.open(io.BytesIO(raw)) as master:
+            self.assertEqual(im.size, (2432, 3405))
+            self.assertEqual(im.crop((0, 182, 2432, 3222)).tobytes(), master.tobytes())
+        self.assertEqual(self.request('GET', desk_path)[1], desk_raw)
+        self.assertEqual(self.request('GET', desk_path, cookie=stranger)[0], 404)
 
     def test_failed_checks_need_explicit_human_override(self):
         self.quality['likeness'] = False
@@ -245,6 +255,14 @@ class ReviewAndArtifactTests(unittest.TestCase):
         self.assertNotEqual(first['master.png'], raw)
         with Image.open(io.BytesIO(first['master.png'])) as im:
             self.assertEqual(im.size, (800, 1000))
+        for size, height in [('5x7', 1120), ('12x16', 1067)]:
+            with Image.open(io.BytesIO(matted_print(first['master.png'], size))) as paper:
+                self.assertEqual(paper.size, (800, height))
+                top = (height - 1000) // 2
+                with Image.open(io.BytesIO(first['master.png'])) as master:
+                    self.assertEqual(paper.crop((0, top, 800, top + 1000)).tobytes(), master.tobytes())
+        with self.assertRaises(ValueError):
+            matted_print(raw, '8x10')
         with self.assertRaises(ValueError):
             matted_print(png((600, 600), 'white'))
 

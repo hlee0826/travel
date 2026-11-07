@@ -41,14 +41,17 @@ def artwork_files(raw, name):
     return files
 
 
-def matted_print(raw):
-    """12 × 16 paper with a 12 × 15 painting, no crop or invented detail."""
+def matted_print(raw, size='12x16'):
+    """Center the approved painting on the selected paper without cropping."""
+    ratios = {'5x7': 7 / 5, '12x16': 4 / 3}
+    if size not in ratios:
+        raise ValueError('Choose an available print size.')
     with Image.open(io.BytesIO(raw)) as source:
         im = source.convert('RGB')
     w, h = im.size
     if w * 5 != h * 4:
         raise ValueError('Matting requires a 4:5 approved painting.')
-    paper = Image.new('RGB', (w, round(w * 4 / 3)), '#faf5e7')
+    paper = Image.new('RGB', (w, round(w * ratios[size])), '#faf5e7')
     paper.paste(im, (0, (paper.height-h)//2))
     out = io.BytesIO()
     paper.save(out, 'PNG')

@@ -148,6 +148,10 @@ p { max-width: 65ch; text-wrap: pretty; }
   padding: 7px 10px;
   background: var(--bg);
 }
+.builder-scene.desk-photo { padding: 0; background: none; }
+.builder-scene.desk-photo .builder-art { max-width: none; box-shadow: none; }
+.builder-scene.desk-photo img { aspect-ratio: 1; }
+.builder-scene.desk-photo figcaption { margin: 0; padding: 7px 10px; }
 .builder-copy > p { color: var(--muted); font-size: .9rem; }
 .builder-copy h2 { margin-bottom: 20px; }
 .builder-fields { display: grid; gap: 14px; margin: 25px 0; }
@@ -198,6 +202,35 @@ select { display: block; width: 100%; padding: 12px; margin-top: 6px; border: 1p
 .portrait-wrap.framed { border: 12px solid #b68b59; padding: 12px; background: var(--paper); }
 .portrait-wrap.matted { padding: 0; }
 .portrait-wrap.matted > img, .portrait-wrap.matted > canvas { aspect-ratio: 3/4; object-fit: contain; background: #faf5e7; }
+.portrait-wrap.desk-mat > img, .portrait-wrap.desk-mat > canvas { aspect-ratio: 5/7; }
+.art-stage.desk-mockup {
+  position: relative;
+  aspect-ratio: 1;
+  min-height: 0;
+  padding: 0;
+  background: var(--surface) url('/assets/japandi-desk.png') center / cover no-repeat;
+}
+.art-stage.desk-mockup .portrait-wrap {
+  position: absolute;
+  top: auto;
+  bottom: 19%;
+  left: 50%;
+  width: 34%;
+  max-width: none;
+  transform: translateX(-50%);
+  aspect-ratio: 5/7;
+  display: flex;
+  align-items: center;
+  border: clamp(7px, .9vw, 12px) solid #b68b59;
+  padding: 2%;
+  background: #faf5e7;
+  box-shadow: inset 2px 3px 4px #30251520, 3px 4px 5px #30251550;
+}
+.desk-mockup .portrait-wrap > img, .desk-mockup .portrait-wrap > canvas {
+  aspect-ratio: auto;
+  height: 100%;
+  object-fit: cover;
+}
 .correction { margin-top: 24px; }
 .correction select { width: 100%; min-height: 44px; padding: 10px; border: 1px solid #a49a8b; background: var(--paper); color: var(--ink); border-radius: 4px; }
 .generation-stages { padding-left: 22px; font-size: .84rem; color: var(--muted); }
@@ -262,14 +295,11 @@ textarea { width: 100%; min-height: 180px; font-size: .78rem; background: var(--
 .candidate img { aspect-ratio: 4/5; object-fit: contain; margin-bottom: 5px; }
 .product-option { border: 1px solid #b9ae9e; border-radius: 4px; display: flex; align-items: center; gap: 12px; padding: 16px 13px; margin-bottom: 10px; cursor: pointer; }
 .product-option:has(input:checked) { background: var(--pale); border-color: var(--primary); }
-.product-option input, .size-choice input { accent-color: var(--primary); }
+.product-option input { accent-color: var(--primary); }
+#print-size + .fine { margin-top: 12px; }
 .product-option strong { font-size: .9rem; display: block; font-weight: 600; }
 .product-option small { font-size: .73rem; color: var(--muted); display: block; margin-top: 4px; }
 .option-price { margin-left: auto; font-size: .94rem; white-space: nowrap; }
-.size-row { display: flex; flex-wrap: wrap; gap: 10px; }
-.size-choice { border: 1px solid #b9ae9e; border-radius: 4px; padding: 11px 15px; font-size: .82rem; cursor: pointer; }
-.size-choice:has(input:checked) { border-color: var(--primary); background: var(--pale); }
-.size-row + .fine { margin-top: 12px; }
 .summary { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 23px; }
 .summary div { display: flex; justify-content: space-between; gap: 15px; font-size: .84rem; margin-bottom: 10px; }
 .summary .total { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 16px; font-weight: 600; font-size: 1.1rem; }

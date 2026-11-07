@@ -23,7 +23,7 @@ def options(body):
     if not isinstance(style,str) or style not in STYLES or not isinstance(name, str) or len(name.strip()) > 24 or any(ord(c) < 32 for c in name):
         raise ValueError('Choose a garden and a pet name of at most 24 characters.')
     product = body.get('product', 'digital')
-    size = 'digital' if product == 'digital' else body.get('size', '8x10')
+    size = 'digital' if product == 'digital' else body.get('size', '5x7')
     if not isinstance(product,str) or not isinstance(size,str):
         raise ValueError('Choose an available keepsake and size.')
     quote(product, size)

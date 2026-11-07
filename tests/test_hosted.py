@@ -8,18 +8,39 @@ import secrets
 import subprocess
 import sys
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from PIL import Image
 import psycopg
 from psycopg.types.json import Jsonb
 from fastapi.testclient import TestClient
 from hosted import auth, db, service, pipeline
-from app.main import app
+from app.main import app, download
 
 TEST_DB = os.environ.get('MINHWA_TEST_DATABASE_URL')
 
 
 class PasswordTests(unittest.TestCase):
+    def test_desk_print_download_uses_owned_master(self):
+        raw = io.BytesIO()
+        Image.new('RGB', (800, 1000), '#a4b5c6').save(raw, 'PNG')
+        doc = {'size': '5x7', 'job_id': 'b'*24, 'candidate': {'id': 'c'*24, 'artifacts_version': 1}}
+        request = Mock()
+        request.state.session = 'owner'
+        with patch('app.main.db.connect') as connect, patch('app.main.storage.read', return_value=raw.getvalue()) as read, patch('app.main.storage.put') as put, patch('app.main.storage.signed_read', return_value='signed-print') as sign:
+            conn = connect.return_value.__enter__.return_value
+            conn.execute.return_value.fetchone.return_value = {'document': doc}
+            self.assertEqual(download('a'*24, 'print', request), {'url': 'signed-print'})
+            self.assertEqual(conn.execute.call_args.args[1], ('a'*24, 'owner'))
+            read.assert_called_once_with('art', 'b'*24 + '/' + 'c'*24 + '/master.png')
+            self.assertTrue(put.call_args.args[1].endswith('/print-5x7.png'))
+            with Image.open(io.BytesIO(put.call_args.args[2])) as paper:
+                self.assertEqual(paper.size, (800, 1120))
+            read.reset_mock()
+            conn.execute.return_value.fetchone.return_value = None
+            with self.assertRaises(LookupError):
+                download('a'*24, 'print', request)
+            read.assert_not_called()
+
     def test_workflow_import_does_not_load_io_pipeline(self):
         subprocess.run([sys.executable, '-c', '''
 import builtins

@@ -80,10 +80,10 @@ class StudioTests(unittest.TestCase):
         complete = studio.complete(job['id'], [self.image_path])
         self.assertEqual(complete['completed_batches'], 1)
         self.assertEqual(complete['candidates'][0]['style_anchors'], [p.name for p in server.workflow.STYLE_ANCHORS])
-        data = {'key': secrets.token_hex(12), 'job_id': job['id'], 'candidate_id': complete['candidates'][0]['id'], 'approved': True, 'product': 'framed', 'size': '16x20', 'total': 1}
+        data = {'key': secrets.token_hex(12), 'job_id': job['id'], 'candidate_id': complete['candidates'][0]['id'], 'approved': True, 'product': 'framed', 'size': '5x7', 'total': 1}
         status, order, _ = self.request('POST', '/api/orders', data, cookie)
         self.assertEqual(status, 201)
-        self.assertEqual(order['totals']['total'], 13500)
+        self.assertEqual(order['totals']['total'], 8500)
         status, duplicate, _ = self.request('POST', '/api/orders', data, cookie)
         self.assertEqual(status, 200)
         self.assertEqual(order, duplicate)
@@ -126,9 +126,12 @@ class StudioTests(unittest.TestCase):
 
     def test_product_quotes(self):
         self.assertEqual(server.quote('digital','digital')['total'],1900)
-        self.assertEqual(server.quote('print','8x10')['total'],4500)
-        with self.assertRaises(ValueError):
-            server.quote('print','digital')
+        self.assertEqual(server.quote('print','5x7')['total'],4500)
+        self.assertEqual(server.quote('framed','5x7')['total'],8500)
+        self.assertEqual(server.quote('framed','12x16')['total'],11500)
+        for size in ('8x10', '16x20', 'digital'):
+            with self.assertRaises(ValueError):
+                server.quote('print',size)
 
     def test_hosted_cookie_and_origin_boundary(self):
         with patch.object(server, 'PUBLIC_ORIGIN', 'https://minhwa.pinnedby.com'):

@@ -27,7 +27,7 @@ API mode requires `MINHWA_IMAGE_PROVIDER=openai`, `OPENAI_API_KEY`, Images Reque
 3. The durable local queue creates one high-quality 2432 × 3040 painting using both photos plus all four actual style references. The face photo governs facial geometry and expression; the full-body photo governs silhouette, proportions, coat and markings. No previous output is used as a retry reference.
 4. Automated review checks facial likeness and expression, markings, body proportions, anatomy, painted appearance, fresh setting, chosen garden, scene interaction, safe margins and unwanted text. A result that passes every check is released automatically for customer review. Any failed or uncertain criterion stays private for explicit studio review.
 5. The customer compares the approved painting with their face photo and explicitly approves it. Corrections can request a fresh interpretation while retaining earlier approved work.
-6. Choose digital, print or natural-oak framed print. Physical sizes are 8 × 10, 12 × 16 and 16 × 20 inches. Place a clearly labeled test order; no payment or supplier is contacted.
+6. Choose digital, print or natural-oak framed print. Physical sizes are 5 × 7 inches for your desk and 12 × 16 inches for your wall. Place a clearly labeled test order; no payment or supplier is contacted.
 7. PNG/JPEG downloads use the saved approved master, including the optional name. The preview watermark is separate. A 12 × 16 sheet centers the complete 12 × 15 painting with half-inch top/bottom borders; it never crops the artwork.
 
 ## Flagged artwork review

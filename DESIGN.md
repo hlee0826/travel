@@ -26,7 +26,7 @@ The storefront logo is **Their Little World**, with **Pet Portrait Studio** belo
 - Upload, review, checkout and order screens share the storefront palette. Desktop uses artwork alongside controls; mobile stacks them.
 - The mobile menu uses an expanded state, closes after navigation and supports Escape. Native inputs and FAQ disclosures remain keyboard accessible.
 - Image hover effects are short and finite; content remains available without animation. Reduced motion removes animation and transitions. No continuous decorative movement in the creation flow.
-- Gallery image crops are decorative. Approval uses a saved preview; new downloads use the immutable named master. A 12 × 16 mat adds paper above and below without cropping the 4:5 painting.
+- Gallery image crops are decorative. Approval uses a saved preview; new downloads use the immutable named master. Both 5 × 7 and 12 × 16 mats add paper above and below without cropping the 4:5 painting. The homepage 5 × 7 framed preview uses the complete generated `desk-peony-framed-v2.png` photograph, labeled as a peony sample; customer previews show their own artwork against the desk background; 12 × 16 retains the wall scene in the configurator.
 
 ## Product truth
 

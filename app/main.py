@@ -9,6 +9,7 @@ from urllib.parse import urlparse, parse_qs
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse, FileResponse
 from hosted import auth, db, service, storage
+from artifacts import matted_print
 from hosted.config import ROOT, origin, required, generation_enabled
 from hosted.dispatch import dispatch
 
@@ -186,8 +187,12 @@ def download(order_id: str, kind: str, request: Request):
     if not row:
         raise LookupError()
     doc = row['document']
-    if not doc['candidate'].get('artifacts_version') or (kind=='print' and doc['size']!='12x16'):
+    if not doc['candidate'].get('artifacts_version') or (kind=='print' and doc['size'] not in ('5x7','12x16')):
         raise LookupError()
+    if kind == 'print' and doc['size'] == '5x7':
+        names['print'] = 'print-5x7.png'
+        prefix = f'{doc["job_id"]}/{doc["candidate"]["id"]}/'
+        storage.put('art', prefix + names['print'], matted_print(storage.read('art', prefix + 'master.png'), '5x7'))
     return {'url':storage.signed_read('art', f'{doc["job_id"]}/{doc["candidate"]["id"]}/{names[kind]}')}
 
 

@@ -71,7 +71,7 @@ class StorageLock:
 LOCK = StorageLock()
 Image.MAX_IMAGE_PIXELS = 40_000_000
 STYLES = {'peony': ('Peonies and butterflies', 'peony-cat.png'), 'lotus': ('Lotus garden', 'lotus-dog.png')}
-PRICES = {'digital': {'digital': 1900}, 'print': {'8x10': 3900, '12x16': 5900, '16x20': 6900}, 'framed': {'8x10': 7900, '12x16': 10900, '16x20': 12900}}
+PRICES = {'digital': {'digital': 1900}, 'print': {'5x7': 3900, '12x16': 5900}, 'framed': {'5x7': 7900, '12x16': 10900}}
 ID = re.compile(r'^[a-f0-9]{24}$')
 
 
@@ -452,10 +452,12 @@ class Handler(BaseHTTPRequestHandler):
                     order = read_json(DATA / 'orders' / (match[1] + '.json'))
                     if order['session'] != session or not order['candidate'].get('artifacts_version'):
                         raise FileNotFoundError()
-                    if match[2] == 'print' and order['size'] != '12x16':
+                    if match[2] == 'print' and order['size'] not in ('5x7', '12x16'):
                         raise FileNotFoundError()
-                    filename = {'png': 'master.png', 'jpeg': 'master.jpg', 'print': 'print-12x16.png'}[match[2]]
+                    filename = {'png': 'master.png', 'jpeg': 'master.jpg', 'print': f"print-{order['size']}.png"}[match[2]]
                     file = job_path(order['job_id']) / 'artifacts' / order['candidate']['id'] / filename
+                    if match[2] == 'print' and order['size'] == '5x7' and not file.exists():
+                        save_bytes(file, matted_print((file.parent / 'master.png').read_bytes(), '5x7'))
                     return self.send(200, file.read_bytes(), 'image/jpeg' if match[2] == 'jpeg' else 'image/png')
             # Only the public directory is served; source code and uploaded photos are never static routes.
             target = (PUBLIC / ('index.html' if path == '/' else path.lstrip('/'))).resolve()
@@ -490,7 +492,7 @@ class Handler(BaseHTTPRequestHandler):
                         raise ValueError('Use a pet name of 24 characters or fewer.')
                     demo = body.get('demo') is True
                     preference = body.get('product', 'digital')
-                    preferred_size = 'digital' if preference == 'digital' else body.get('size', '8x10')
+                    preferred_size = 'digital' if preference == 'digital' else body.get('size', '5x7')
                     quote(preference, preferred_size)
                     submit_key = body.get('key')
                     if not demo and GENERATOR and (not isinstance(submit_key, str) or not ID.fullmatch(submit_key)):
