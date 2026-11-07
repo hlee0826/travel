@@ -11,13 +11,14 @@ import workflow
 
 class WorkflowTests(unittest.TestCase):
     def test_roles_compositions_and_reference_files(self):
-        # A bundled painting stands in for a photo; no private fixture is needed.
-        source = workflow.STYLE_ANCHORS[0]
-        for style, primary in [('peony', 'images 2 and 3'), ('lotus', 'image 4')]:
-            inputs = workflow.generation_inputs(source, style)
-            self.assertEqual(inputs['referenced_image_paths'], [str(source), *map(str, workflow.STYLE_ANCHORS)])
+        # Bundled paintings stand in for photos; no private fixture is needed.
+        face, body = workflow.STYLE_ANCHORS[:2]
+        for style, primary in [('peony', 'images 3 and 4'), ('lotus', 'image 5')]:
+            inputs = workflow.generation_inputs(face, style, body_source=body)
+            self.assertEqual(inputs['referenced_image_paths'], [str(face), str(body), *map(str, workflow.STYLE_ANCHORS)])
             self.assertIn(f'Use {primary} as the primary composition', inputs['prompt'])
-            self.assertIn('IDENTITY ONLY', inputs['prompt'])
+            self.assertIn('FACE IDENTITY photo', inputs['prompt'])
+            self.assertIn('FULL-BODY IDENTITY photo', inputs['prompt'])
             self.assertIn('STYLE AND COMPOSITION ANCHORS', inputs['prompt'])
             self.assertFalse(inputs['transparent_background'])
             for path in inputs['referenced_image_paths']:
@@ -50,15 +51,22 @@ class WorkflowTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / 'run' / 'inputs.json'
             command = [sys.executable, str(Path(workflow.__file__).resolve()),
-                       '--source', str(workflow.STYLE_ANCHORS[0]), '--style', 'lotus',
+                       '--source', str(workflow.STYLE_ANCHORS[0]),
+                       '--body-source', str(workflow.STYLE_ANCHORS[1]), '--style', 'lotus',
                        '--output', str(output)]
             result = subprocess.run(command, cwd=temp, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             before = output.read_bytes()
-            self.assertEqual(len(json.loads(before)['referenced_image_paths']), 5)
+            self.assertEqual(len(json.loads(before)['referenced_image_paths']), 6)
             duplicate = subprocess.run(command, cwd=temp, capture_output=True, text=True)
             self.assertNotEqual(duplicate.returncode, 0)
             self.assertEqual(output.read_bytes(), before)
+
+            missing_body = [part for part in command if part not in ('--body-source', str(workflow.STYLE_ANCHORS[1]))]
+            missing_body[-1] = str(Path(temp) / 'run' / 'missing-body.json')
+            omitted = subprocess.run(missing_body, cwd=temp, capture_output=True, text=True)
+            self.assertNotEqual(omitted.returncode, 0)
+            self.assertIn('--body-source', omitted.stderr)
 
 
 if __name__ == '__main__':

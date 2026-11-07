@@ -11,6 +11,7 @@ STYLE_ANCHORS = tuple(Path(__file__).resolve().parent / 'style-anchors' / name f
 
 
 def generation_inputs(source, style, identity='', feedback='', body_source=None):
+    """Prepare current two-photo inputs; ``None`` only supports archived pre-v5 jobs."""
     if style not in ('peony', 'lotus'):
         raise ValueError('Choose peony or lotus.')
     source = Path(source).expanduser().resolve()
@@ -60,7 +61,8 @@ Do not copy any anchor's text, names, signatures, seals, watermarks, promotional
 def main():
     parser = argparse.ArgumentParser(description='Prepare identity and style inputs for Codex image generation; no model API calls.')
     parser.add_argument('--source', type=Path, required=True, help='Pet face identity photo (PNG, JPEG, or WebP).')
-    parser.add_argument('--body-source', type=Path, help='Optional full-body identity photo of the same pet.')
+    parser.add_argument('--body-source', type=Path, required=True,
+                        help='Full-body identity photo of the same pet (required).')
     parser.add_argument('--style', choices=('peony', 'lotus'), default='peony')
     parser.add_argument('--output', type=Path, required=True, help='New JSON file; existing files are never overwritten.')
     args = parser.parse_args()
