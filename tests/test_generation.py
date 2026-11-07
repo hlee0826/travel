@@ -12,10 +12,10 @@ from generation import OpenAIImages, settings, estimated_cost
 
 
 class GenerationTests(unittest.TestCase):
-    def test_all_five_references_and_success_metadata(self):
+    def test_all_six_references_and_success_metadata(self):
         with tempfile.TemporaryDirectory() as folder:
             references = []
-            for i in range(5):
+            for i in range(6):
                 path = Path(folder) / f'{i}.png'
                 Image.new('RGB', (100 + i, 150), (i * 40, 20, 10)).save(path)
                 references.append(str(path))
@@ -28,7 +28,7 @@ class GenerationTests(unittest.TestCase):
             self.assertEqual(sent.full_url, 'https://api.openai.com/v1/images/edits')
             self.assertEqual(payload['n'], 1)
             self.assertEqual(payload['model'], 'gpt-image-2.6-sunburst')
-            self.assertEqual(len(payload['images']), 5)
+            self.assertEqual(len(payload['images']), 6)
             for i, image in enumerate(payload['images']):
                 with Image.open(io.BytesIO(base64.b64decode(image['image_url'].split(',', 1)[1]))) as decoded:
                     self.assertEqual(decoded.getpixel((0, 0)), (i * 40, 20, 10))

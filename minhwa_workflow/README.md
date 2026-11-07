@@ -24,6 +24,8 @@ python3 minhwa_workflow/workflow.py \
 
 Choose `peony` or `lotus`. Missing image files fail preparation. Existing output files are never overwritten; choose a new run folder for each revision. The script resolves reference paths on the current computer, so regenerate the JSON after moving the folder or changing computers.
 
+Both identity photos are required by the command-line workflow. The Python helper retains a single-photo compatibility path only so archived pre-v5 jobs can still be inspected; new integrations must always pass `body_source`.
+
 The output JSON includes `reference_hashes` for integrity checking plus the built-in image tool's `prompt`, `referenced_image_paths`, and `transparent_background` arguments. Its attachment order is significant:
 
 | Image | File | Role |
