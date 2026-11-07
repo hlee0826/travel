@@ -1,5 +1,7 @@
 # Image generation implementation and QA — November 5, 2026
 
+Historical v4 evidence: the live runs below used four anchors. The current v5 pose-routing implementation and pending reference setup are documented in `../minhwa_workflow/README.md`; these historical results do not validate v5 branch quality or savings.
+
 The local upload → generated painting → automated review/release (studio review if flagged) → owner approval → simulated order → exact download flow is implemented and tested. This report distinguishes software behavior, two real API runs, owner feedback, and production-readiness work that remains.
 
 ## Requirement evidence
@@ -67,3 +69,12 @@ After the owner encountered the manual pause during testing, passing artwork now
 ## Local testing allowance adjustment
 
 Five attempts reserved the original $15 admission allowance while known provider cost was estimated at $0.852149. The private local configuration was increased to $30 (ten $3 reservations per rolling 24 hours) for continued testing. The default example remains $15. Session/photo/portrait limits remain active. The server was restarted while idle and the next global reservation was checked without submitting a paid request.
+
+
+## November 7 pose routing validation
+
+V5 implements compact eight-bucket classification, one or two selected references per garden/bucket, saved selection recovery, branch-specific gaze review, and explicit unavailable-composition handling. All real reference entries remain pending.
+
+54 tests passed across the application and portable workflow suites, including the disposable UTF-8 PostgreSQL integration tests and local Caddy password proxy. Tests cover all eight selections in both gardens, strict classification schema, pending/missing references, no repeat request while a branch is unavailable, catalog changes between hosted stages, changed reference bytes, manual preparation, and preserved approved downloads. JavaScript syntax, Python compilation, and source-package catalog/privacy checks also passed.
+
+Provider responses were mocked. No paid API calls or deployment were performed for v5; real pose classification, visual quality, and cost savings remain unmeasured.

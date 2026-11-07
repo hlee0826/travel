@@ -12,6 +12,7 @@ import unittest
 from unittest.mock import Mock, patch
 from PIL import Image
 import server
+from pose_fixtures import ready_references
 from artifacts import artwork_files, matted_print
 from generation import ART_FIELDS, OpenAIReview, PHOTO_FIELDS
 
@@ -24,6 +25,9 @@ def png(size, color):
 
 class PipelineTests(unittest.TestCase):
     def setUp(self):
+        self.references = ready_references()
+        self.reference_root = self.references.__enter__()
+        self.addCleanup(self.references.__exit__, None, None, None)
         self.temp = tempfile.TemporaryDirectory()
         self.patches = [patch.object(server, 'DATA', Path(self.temp.name)),
                         patch.object(server, 'GENERATOR', Mock()), patch.object(server, 'REVIEWER', Mock()),
@@ -34,9 +38,7 @@ class PipelineTests(unittest.TestCase):
         threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
         self.photo = png((800, 1000), '#523315')
         self.art = png((2432, 3040), '#d6bba1')
-        self.verdict = {'usable': True, 'pet_count': 1, 'species': 'dog', 'face_visible': True,
-            'details_clear': True, 'identity': 'Upright ears; tan eyebrows; black coat.',
-            'unseen_features': 'Tail hidden.', 'reason': 'Clear face.'}
+        self.verdict = {'usable': True, 'bucket': 'standing_front', 'reason': ''}
         self.quality = {k: True for k in ART_FIELDS if k != 'reason'} | {'reason': 'All visible criteria match.'}
         server.REVIEWER.photo.return_value = (self.verdict, {'usage': {'input_tokens': 500}})
         server.REVIEWER.artwork.return_value = (self.quality, {'usage': {'input_tokens': 2000}})
@@ -120,7 +122,7 @@ class PipelineTests(unittest.TestCase):
             self.assertFalse(worker.is_alive())
 
     def test_bad_photo_never_paints(self):
-        self.verdict.update(usable=False, pet_count=2, reason='Choose a photo of one pet.')
+        self.verdict.update(usable=False, bucket=None, reason='Choose a photo of one pet.')
         job = self.run_job(self.create())
         self.assertEqual(job['status'], 'needs_photo')
         self.assertEqual(job['completed_batches'], 0)
@@ -210,14 +212,44 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(status, 200)
         next_job = self.run_job(job)
         request = server.GENERATOR.generate.call_args.args[0]
-        self.assertEqual(len(request['referenced_image_paths']), 5)
+        self.assertEqual(len(request['referenced_image_paths']), 2)
         self.assertNotIn('art-', request['referenced_image_paths'][0])
         self.assertIn('patch locations', request['prompt'])
-        self.assertIn('tan eyebrows', request['prompt'])
+        self.assertEqual(request['bucket'], 'standing_front')
+        self.assertIn('looking forward', request['prompt'])
         self.assertEqual(self.request('POST', '/api/orders', order)[1], saved)
         self.assertEqual(next_job['status'], 'ready')
         self.assertEqual(next_job['completed_batches'], 2)
         self.assertEqual(self.request('POST', f"/api/jobs/{job['id']}/retry", {})[0], 400)
+
+    def test_pending_references_and_ambiguous_pose_never_paint(self):
+        catalog = server.workflow.CATALOG_PATH
+        saved = json.loads(catalog.read_text())
+        saved['styles']['peony']['standing_front']['status'] = 'pending'
+        catalog.write_text(json.dumps(saved))
+        job = self.run_job(self.create())
+        self.assertEqual(job['status'], 'composition_unavailable')
+        self.assertIn('not available', job['error'])
+        self.assertFalse(server.public_job(job)['can_retry'])
+        self.assertEqual(self.request('POST', f"/api/jobs/{job['id']}/retry", {})[0], 400)
+        saved['styles']['peony']['standing_front']['status'] = 'ready'
+        catalog.write_text(json.dumps(saved))
+        self.assertTrue(server.public_job(job)['can_retry'])
+        server.GENERATOR.generate.assert_not_called()
+        self.verdict['bucket'] = None
+        job = self.run_job(self.create())
+        self.assertEqual(job['status'], 'needs_photo')
+        server.GENERATOR.generate.assert_not_called()
+
+    def test_reference_change_during_painting_blocks_review(self):
+        def generate(inputs, session):
+            Path(inputs['referenced_image_paths'][1]).write_bytes(b'changed')
+            return self.art, {}
+        server.GENERATOR.generate.side_effect = generate
+        job = self.run_job(self.create())
+        self.assertEqual(job['status'], 'uncertain')
+        server.REVIEWER.artwork.assert_not_called()
+        self.assertEqual(job['candidates'], [])
 
     def test_artifact_failure_cannot_release_an_unusable_master(self):
         with patch('server.artwork_files', side_effect=OSError('disk failure')):

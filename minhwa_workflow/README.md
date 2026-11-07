@@ -1,86 +1,84 @@
-# Minhwa pet-art workflow
+# Minhwa pose reference workflow
 
-Create a new Korean minhwa-inspired painting using one pet photo for identity and four supplied paintings for style and composition. This folder is self-contained and can be copied into another project.
+Version: `minhwa-poses-v5`. The local and hosted applications share this eight-bucket workflow. The uploaded photo supplies identity; one or two selected paintings supply style and compatible composition. Only the selected set is attached to generation and artwork review.
 
-Version: `minhwa-anchors-v4`. The prompt matches the tested local studio workflow. The website imports this module so both use the same art direction.
+## Photo assessment
 
-## Requirements
+The existing photo-review call returns only `usable`, `bucket`, and `reason`. It checks for one identifiable cat or dog with a clear visible face and chooses a bucket. It does not produce an identity narrative, anatomy report, confidence score, or separate angle fields.
 
-- Python 3.10 or newer. Request preparation and tests use only the standard library; there are no packages to install.
-- Codex with its built-in image generation tool available for the actual generation step. No API key is required. This script prepares inputs; it does not invoke a model automatically.
-- Your pet photo in PNG, JPEG, or WebP format. Convert HEIC before standalone use; the local studio already normalizes HEIC uploads.
+| Bucket | Composition |
+| --- | --- |
+| standing_front | Standing, looking forward |
+| standing_profile | Standing, watching a butterfly |
+| sitting_front | Sitting, looking forward |
+| sitting_profile | Sitting, watching a butterfly |
+| reclining_front | Reclining, looking forward |
+| reclining_profile | Reclining, watching a butterfly |
+| portrait_front | Head/chest portrait, looking forward |
+| portrait_profile | Head/chest portrait, watching a butterfly |
 
-## Prepare a request
+Head/chest crops or insufficient body evidence use portrait buckets. Front/profile follows the face, not the torso. Three-quarter faces use the closest compatible view without a large head turn. Unusable or unmatchable photos return a null bucket and stop before painting. The reason is empty on success and a short explanation on failure.
 
-From the repository root:
+## Add references later
+
+All eight entries in each garden are initially **pending** in `reference-catalog.json`. No legacy anchor is silently substituted. The old files remain on disk for historical records.
+
+1. Put one or two curated PNG, JPEG, or WebP images under `style-anchors/`, for example `style-anchors/peony/standing_front/anchor-1.png`.
+2. Inspect them for the intended pose, consistent minhwa painting style, botanical setting, and clean framing. Use references with appropriate permissions. Avoid advertisement margins and text.
+3. Set the matching garden/bucket entry to `ready`, with paths relative to `style-anchors/`:
+
+```json
+{
+  "status": "ready",
+  "references": ["peony/standing_front/anchor-1.png"]
+}
+```
+
+4. Run the tests and a prepared request for that bucket, then validate generated results before deploying the updated catalog and files.
+
+Absolute paths, parent traversal, duplicate files, and more than two references are rejected. Missing files stop generation. Pending branches display `composition_unavailable`; they do not reject the photo or issue an image-generation request. Retry becomes available once the selected branch is ready. Earlier attempts retain their spending reservation and count toward the existing limits.
+
+Keep palette, brushwork, paper, plant drawing, and detail level consistent across sets. Reference animals must not supply identity or markings. No left/right sub-buckets are required.
+
+## Prepare a standalone request
+
+Python 3.10 or newer is sufficient for this portable module; no model API call is made. Inspect the photo and explicitly choose a bucket first.
 
 ```sh
 python3 minhwa_workflow/workflow.py \
   --source /absolute/path/to/pet.png \
   --style peony \
-  --output minhwa_workflow/runs/portrait-1/generation-inputs.json
+  --bucket standing_front \
+  --output /absolute/path/to/new-inputs.json
 ```
 
-Choose `peony` or `lotus`. Missing image files fail preparation. Existing output files are never overwritten; choose a new run folder for each revision. The script resolves reference paths on the current computer, so regenerate the JSON after moving the folder or changing computers.
+The output contains the exact prompt, ordered `referenced_image_paths`, `transparent_background`, selected bucket and garden, workflow/catalog versions, relative reference filenames, composition instructions, and file hashes. Existing output files are never overwritten.
 
-The output JSON includes `reference_hashes` for integrity checking plus the built-in image tool's `prompt`, `referenced_image_paths`, and `transparent_background` arguments. Its attachment order is significant:
+When using Codex's built-in image tool, inspect every listed image and pass only the prompt, referenced_image_paths, and transparent_background arguments. Attach all listed files in order. Do not substitute descriptions or use previous portraits. Review the painting against its source, selected references, and saved composition. No external API call is authorized by this manual preparation.
 
-| Image | File | Role |
-| --- | --- | --- |
-| 1 | Your pet photo | Identity only: ears, proportions, age, eyes, coat patches |
-| 2 | `style-anchors/peony-tuxedo-cat.png` | Peony framing, pigment, botanical drawing |
-| 3 | `style-anchors/peony-tabby-cat.png` | Peony framing, negative space, pet scale |
-| 4 | `style-anchors/lotus-corgi.png` | Lotus composition and traditional painted forms |
-| 5 | `style-anchors/bamboo-white-dog.png` | Spacious botanical framing; ignore promotional margins |
+## Local manual studio
 
-Peony requests emphasize images 2–3; lotus requests emphasize image 4. All four remain attached as style anchors. The reference pets never supply the new pet's identity.
+New uploads in manual mode wait at `awaiting_assessment`. Read the request, inspect the photo, and record its bucket:
 
-## Generate in Codex
-
-Paste this instruction into Codex after preparing the request, substituting the actual JSON path:
-
-> Read `minhwa_workflow/runs/portrait-1/generation-inputs.json`. Inspect all five images in its attachment order. Use the built-in image generation tool with the JSON's exact prompt, referenced_image_paths, and transparent_background arguments. Attach all five actual files, not descriptions. Create one new painting and save the tool's output to `minhwa_workflow/runs/portrait-1/artwork.png`. Do not use an external model API or local filters. Review the result against the checklist in `minhwa_workflow/README.md`; revise if necessary. Preserve the original photo and anchors.
-
-The photo is an identity reference, never a pixel base, tracing, background, pose lock, or image to filter. Generate a fresh pose with the head, muzzle, and eyes directed toward the same nearby butterfly. Use grouped fur colors, ink contours, restrained pigment shading, and traditional botanical composition. Do not feed earlier generated portraits back as references.
-
-If the built-in tool is unavailable, stop and report that limitation. Do not silently switch to a paid API or attach a demo as if it were generated from the pet photo.
-
-## Review before accepting
-
-1. The pet remains recognizable: ear silhouette, muzzle proportions, age, eye color, coat patches, and body proportions come from image 1.
-2. The painting has a fresh composition and pose, without the photo's setting or camera lighting.
-3. Pet and plants share a traditional painted appearance. Reject photographic cutouts, photo texture beneath a paper filter, excessive fur detail, or modern cartoon rendering.
-4. The head, muzzle, and visible pupils aim toward one butterfly in a believable sightline.
-5. Exactly one pet, coherent anatomy, and safe margins around ears and paws. Do not invent unseen identifying markings.
-6. No copied reference text, names, seals, signatures, promotional borders, or watermarks. Add optional customer text separately after generation.
-
-Keep the input JSON alongside each accepted result. Record the workflow version and the four anchor filenames when integrating into an application. Visual review is manual; passing tests does not establish image quality or print readiness.
-
-## Application integration
-
-```python
-from minhwa_workflow.workflow import generation_inputs, WORKFLOW_VERSION
-
-inputs = generation_inputs('/absolute/path/to/normalized-pet.png', 'peony')
-# Save inputs in the private job folder, then hand them to Codex's image tool.
+```sh
+.venv/bin/python studio.py prepare JOB_ID --bucket portrait_front
 ```
 
-The consuming app must validate and normalize uploads, restrict access to private job files, and require approval of a generated candidate before ordering. The local Minhwa studio handles these steps and attaches tool outputs through `studio.py complete JOB_ID /absolute/path/artwork.png`. That website and its session/order data are separate from this portable folder.
+If references are ready, the job becomes `awaiting_artwork` and its updated `request.txt` describes generation and review. If references are missing, it becomes `composition_unavailable`; rerun preparation after supplying the references. Attach reviewed artwork with `studio.py complete JOB_ID /absolute/path/artwork.png`. The server verifies the prepared reference hashes before accepting new-workflow manual results.
+
+## Generation and review
+
+Front buckets require forward gaze, with butterflies optional as decoration. Profile buckets require a plausible butterfly sightline. Portrait buckets permit intentional chest framing without inventing a lower body. All branches preserve likeness and visible markings, use a fresh painted garden, and avoid photo texture, copied text, signatures, or frames.
+
+Artwork review receives the original photo, generated painting, selected references, and the same saved composition instructions. A fresh scene does not require a changed posture. All nine quality checks must pass for automatic release; the customer still approves likeness.
+
+Each attempt saves its selection. Hosted stages restore it without rereading the catalog for a new selection; changed source or reference bytes block continuation. Already approved artwork and orders remain unchanged. Old hosted attempts lacking a saved selection stop for studio reconciliation rather than mixing old and new instructions; a new attempt uses v5. Existing manual v4 handoffs can be completed as recorded; their next preparation uses an explicit v5 bucket.
 
 ## Tests
 
 ```sh
 python3 -m unittest discover -s minhwa_workflow -p 'test_*.py' -v
+.venv/bin/python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-Tests exercise both compositions, ordered readable references, missing inputs, invalid style selection, portable command execution, and refusal to overwrite existing output. No generation call is made during tests.
-
-## ComfyUI status
-
-ComfyUI was an earlier proposed engine. The website now uses OpenAI directly; this standalone handoff uses Codex's built-in image tool. There is no executable ComfyUI graph, installed checkpoint, adapter, or model download in this folder. A production implementation must separately condition identity and style, synthesize a fresh image, and pass the review criteria above. A low-change image-to-image filter does not meet the requirement.
-
-## Reference provenance and local data
-
-The four PNGs are unchanged user-supplied style references. Their depicted pets, lettering, and artist marks are not output assets to reproduce. No ownership or redistribution license for the third-party reference art is asserted by this repository.
-
-`runs/` is ignored by Git. Keep uploaded pet photos and generated request files there or outside the repository; the prepared JSON contains absolute local paths. No user pet photos, generated portraits, API credentials, browser cookies, or order records are bundled here.
+Tests use temporary assets and mocked providers, never mark real pending entries ready, and do not establish visual quality or measured API savings. Validate real branch references with consented sample photos before enabling production use. Keep uploaded photos and generated inputs outside the tracked reference directories; `runs/` is ignored.

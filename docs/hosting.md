@@ -8,6 +8,10 @@ and anonymous access protection are verified live. A real hosted portrait comple
 photo review, generation with all five input hashes, all nine artwork checks, and
 artifact rendering. PNG/JPEG downloads and blocked public storage URLs also passed. Checkout and fulfillment are simulated.
 
+## Current workspace update
+
+The November 7 v5 pose-routing update is implemented locally but has not been deployed. It classifies photos into eight pose buckets and selects one or two references per garden/bucket. All sets are pending until their images are supplied. Deploy the catalog and reference assets together; older hosted attempts without a saved selection stop for reconciliation rather than mixing workflows. The live evidence above describes v4.
+
 ## Architecture
 
 - FastAPI on Vercel serves the unchanged website behind a shared password. Every
@@ -22,8 +26,7 @@ artifact rendering. PNG/JPEG downloads and blocked public storage URLs also pass
 - Supabase pg_net wakes the dispatcher after a committed attempt. A one-minute
   Supabase cron checks for undispatched/stalled attempts; it only makes an HTTP
   request when work is due. The SDK handles normal workflow continuation.
-- Original photo plus all four private painting references are used. Identity,
-  fresh painting, garden interaction, and all nine existing quality checks remain.
+- Original photo plus the selected bucket’s one or two private references are used in v5. Photo assessment returns only suitability, bucket, and a short failure reason. All nine artwork checks remain, with forward gaze for front buckets and butterfly interaction for profile buckets.
 - Every paid call gets a database claim first. Re-delivery returns saved results;
   interrupted/ambiguous calls stop for operator reconciliation rather than paying
   again. A successful OpenAI response lost before persistence cannot be recovered

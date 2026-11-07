@@ -9,8 +9,13 @@
 !minhwa_workflow/
 !minhwa_workflow/__init__.py
 !minhwa_workflow/workflow.py
+!minhwa_workflow/reference-catalog.json
 !minhwa_workflow/style-anchors/
-!minhwa_workflow/style-anchors/*.png
+!minhwa_workflow/style-anchors/**/
+!minhwa_workflow/style-anchors/**/*.png
+!minhwa_workflow/style-anchors/**/*.jpg
+!minhwa_workflow/style-anchors/**/*.jpeg
+!minhwa_workflow/style-anchors/**/*.webp
 !fonts/
 !fonts/NotoSerifKR.ttf
 !fonts/OFL.txt

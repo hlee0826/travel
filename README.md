@@ -23,9 +23,9 @@ API mode requires `MINHWA_IMAGE_PROVIDER=openai`, `OPENAI_API_KEY`, Images Reque
 ## Working flow
 
 1. Upload JPEG, PNG, WebP or HEIC, up to 20 MB / 40 megapixels, at least 600 pixels on each edge. Consent is required. Files are decoded, orientation-corrected, normalized and stripped of metadata.
-2. A photo check requires one identifiable cat or dog with clear facial features. Rejected photos never reach the image endpoint.
-3. The durable local queue creates one high-quality 2432 × 3040 painting using the original photo plus all four actual style references. The photo supplies identity only; the painting gets a fresh pose and botanical setting. No previous output is used as a retry reference.
-4. Automated review checks likeness, markings, anatomy, painted appearance, fresh setting, chosen garden, butterfly sightline, safe margins and unwanted text. A result that passes all nine checks is released automatically for customer review. Any failed or uncertain criterion keeps the result private for explicit studio review.
+2. A compact photo check returns suitability, one of eight pose buckets, and a short failure reason. Rejected or unmatchable photos never reach the image endpoint.
+3. The queue selects the garden/bucket reference set and creates one high-quality 2432 × 3040 painting using the original photo plus one or two matching references. It preserves the selected pose category in a fresh botanical setting. No previous output is used as a retry reference. All branch sets initially remain pending until references are supplied; missing references stop before painting with a composition-unavailable message.
+4. Automated review checks likeness, markings, anatomy, painted appearance, fresh setting, chosen garden, branch-specific gaze, safe margins and unwanted text. A result that passes all nine checks is released automatically for customer review. Any failed or uncertain criterion keeps the result private for explicit studio review.
 5. The customer compares the approved painting with their photo and explicitly approves it. Corrections can request a fresh interpretation while retaining earlier approved work.
 6. Choose digital, print or natural-oak framed print. Physical sizes are 5 × 7 inches for your desk and 12 × 16 inches for your wall. Place a clearly labeled test order; no payment or supplier is contacted.
 7. PNG/JPEG downloads use the saved approved master, including the optional name. The preview watermark is separate. A 12 × 16 sheet centers the complete 12 × 15 painting with half-inch top/bottom borders; it never crops the artwork.
@@ -45,13 +45,15 @@ Inspect the source, all anchors and candidate before approval. Automated failure
 
 Timeouts and interrupted calls become `uncertain`. Check provider usage and saved attempt files before `studio.py reconcile JOB_ID --note 'What was verified'`. This enables a manual retry; it does not refund or erase the prior reservation. Requests are never automatically retried.
 
-Manual mode still supports `studio.py complete JOB_ID /absolute/path/artwork.png` and `studio.py fail JOB_ID 'Explanation'`. The portable [workflow](minhwa_workflow/README.md) supplies its exact prompt and reference order.
+Manual mode first requires visual assessment and `studio.py prepare JOB_ID --bucket BUCKET`. It then supports `studio.py complete JOB_ID /absolute/path/artwork.png` and `studio.py fail JOB_ID 'Explanation'`. The portable [workflow](minhwa_workflow/README.md) supplies its exact prompt and reference order.
 
 ## Art direction and saved files
 
-`minhwa_workflow/workflow.py` is the authoritative `minhwa-anchors-v4` brief. Image 1 supplies the pet's identity. Images 2–5 supply pigment, botanical drawing, composition and negative space. All four anchors are included for either garden. Original anchors remain unchanged; the bamboo advertisement's outer margins are cropped only for API transmission. Inputs are normalized/downscaled for transmission, with original hashes recorded. Missing or changed references block generation.
+`minhwa_workflow/workflow.py` is the authoritative `minhwa-poses-v5` brief. Its eight buckets are standing, sitting, reclining, and head/chest portrait, each with front/profile variants. `minhwa_workflow/reference-catalog.json` maps each garden and bucket to one or two references. See the [reference setup instructions](minhwa_workflow/README.md#add-references-later) before enabling a branch.
 
-The pet and plants must share a traditional painted language, with the pet watching one nearby butterfly. No source-room background, photographic cutout, copied anchor identity, text, seal or signature. Optional names are rendered once into the master with bundled OFL-licensed Noto Serif KR. Likeness is reviewed, not mathematically guaranteed.
+The uploaded photo supplies identity. Selected references supply pigment, plants, composition, and negative space. Front-facing pets look forward; profile pets watch a nearby butterfly. The source room, photographic textures, copied reference identity, text, seals, and signatures are excluded. Optional names are rendered once into the master with bundled OFL-licensed Noto Serif KR.
+
+The assessment, exact prompt, composition, selected filenames, versions, and hashes are saved per attempt. Hosted stages reuse the saved selection even if the catalog changes; changed image bytes block continuation. Older hosted attempts without a saved selection require reconciliation and a new attempt. Existing approved work is never regenerated by this update.
 
 `.studio/jobs/JOB_ID/` retains the normalized source, attempts, prompts, reference hashes, provider metadata, review findings and approved artifacts. Pending/rejected artwork and raw masters are not public static files. Session ownership restricts media, orders and downloads. Existing approved orders keep immutable snapshots.
 

@@ -2,7 +2,7 @@
 import argparse
 import json
 from pathlib import Path
-from server import DATA, job_path, read_json, save_json, complete_artwork, review_candidate, reconcile_attempt, LOCK
+from server import DATA, job_path, read_json, save_json, complete_artwork, review_candidate, reconcile_attempt, prepare_generation, workflow, LOCK
 from generation import estimated_cost
 
 
@@ -10,10 +10,27 @@ def complete(job_id, images):
     return complete_artwork(job_id, [Path(path).read_bytes() for path in images])
 
 
+def prepare(job_id, bucket):
+    with LOCK:
+        folder = job_path(job_id)
+        job = read_json(folder / 'job.json')
+        if job.get('generation_provider') == 'openai' or job['demo'] or job['status'] not in ('awaiting_assessment', 'awaiting_artwork', 'composition_unavailable'):
+            raise ValueError('Only a pending manual job can be assigned a pose.')
+        try:
+            prepare_generation(job, bucket)
+        except workflow.ReferenceUnavailable as exc:
+            job.update(status='composition_unavailable', pose_bucket=bucket, error=str(exc))
+        save_json(folder / 'job.json', job)
+        return job
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
     commands.add_parser('pending')
+    preparation = commands.add_parser('prepare', help='Record a visually assessed pose and prepare its references; no API call.')
+    preparation.add_argument('job_id')
+    preparation.add_argument('--bucket', choices=workflow.BUCKETS, required=True)
     commands.add_parser('metrics', help='Report completed calls, estimated credit use, and review outcomes without photo data.')
     review = commands.add_parser('review', help='Record a studio review of a flagged painting.')
     review.add_argument('job_id')
@@ -48,7 +65,7 @@ def main():
         print(json.dumps(rows, indent=2))
     elif args.command == 'pending':
         with LOCK:
-            pending = [j for p in (DATA / 'jobs').glob('*/job.json') if (j := read_json(p))['status'] in ('awaiting_artwork', 'awaiting_review', 'uncertain')]
+            pending = [j for p in (DATA / 'jobs').glob('*/job.json') if (j := read_json(p))['status'] in ('awaiting_assessment', 'awaiting_artwork', 'awaiting_review', 'uncertain', 'composition_unavailable')]
         for job in pending:
             print(f"{job['id']} | {job['status']} | {job['style']} | {job_path(job['id'])}")
             for candidate in job['candidates']:
@@ -56,6 +73,9 @@ def main():
                     print(candidate['id'], candidate.get('quality_report'))
         if not pending:
             print('No pending portraits.')
+    elif args.command == 'prepare':
+        job = prepare(args.job_id, args.bucket)
+        print(job['status'] + (': ' + job['error'] if job.get('error') else ''))
     elif args.command == 'review':
         job = review_candidate(args.job_id, args.candidate_id, args.decision == 'approve', args.note, args.override, args.reviewer)
         print('Review saved:', job['status'])
@@ -69,7 +89,7 @@ def main():
         with LOCK:
             folder = job_path(args.job_id)
             job = read_json(folder / 'job.json')
-            if job['status'] != 'awaiting_artwork':
+            if job.get('generation_provider') == 'openai' or job['status'] not in ('awaiting_assessment', 'awaiting_artwork', 'composition_unavailable'):
                 raise ValueError('Only a pending manual job can be marked failed.')
             job['status'], job['error'] = 'failed', args.reason[:200]
             save_json(folder / 'job.json', job)

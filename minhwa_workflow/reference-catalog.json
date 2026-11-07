@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "styles": {
+    "peony": {
+      "standing_front": {
+        "status": "pending",
+        "references": []
+      },
+      "standing_profile": {
+        "status": "pending",
+        "references": []
+      },
+      "sitting_front": {
+        "status": "pending",
+        "references": []
+      },
+      "sitting_profile": {
+        "status": "pending",
+        "references": []
+      },
+      "reclining_front": {
+        "status": "pending",
+        "references": []
+      },
+      "reclining_profile": {
+        "status": "pending",
+        "references": []
+      },
+      "portrait_front": {
+        "status": "pending",
+        "references": []
+      },
+      "portrait_profile": {
+        "status": "pending",
+        "references": []
+      }
+    },
+    "lotus": {
+      "standing_front": {
+        "status": "pending",
+        "references": []
+      },
+      "standing_profile": {
+        "status": "pending",
+        "references": []
+      },
+      "sitting_front": {
+        "status": "pending",
+        "references": []
+      },
+      "sitting_profile": {
+        "status": "pending",
+        "references": []
+      },
+      "reclining_front": {
+        "status": "pending",
+        "references": []
+      },
+      "reclining_profile": {
+        "status": "pending",
+        "references": []
+      },
+      "portrait_front": {
+        "status": "pending",
+        "references": []
+      },
+      "portrait_profile": {
+        "status": "pending",
+        "references": []
+      }
+    }
+  }
+}

@@ -12,6 +12,7 @@ from unittest.mock import patch, Mock
 from PIL import Image
 import server
 import studio
+from pose_fixtures import ready_references
 
 
 class StudioTests(unittest.TestCase):
@@ -35,6 +36,11 @@ class StudioTests(unittest.TestCase):
         server.DATA = cls.old_data
         cls.tmp.cleanup()
 
+    def setUp(self):
+        self.references = ready_references()
+        self.reference_root = self.references.__enter__()
+        self.addCleanup(self.references.__exit__, None, None, None)
+
     def request(self, method, path, data=None, cookie=None, headers=None):
         connection = http.client.HTTPConnection('127.0.0.1', self.httpd.server_port, timeout=10)
         h = {'Content-Type': 'application/json'}
@@ -57,7 +63,9 @@ class StudioTests(unittest.TestCase):
     def create_job(self, cookie):
         status, job, _ = self.request('POST', '/api/jobs', {'image': base64.b64encode(self.photo).decode(), 'name': '보리 <test>', 'style': 'peony', 'rights': True, 'generation_consent': True}, cookie)
         self.assertEqual(status, 201)
-        return job
+        self.assertEqual(job['status'], 'awaiting_assessment')
+        self.assertFalse((server.job_path(job['id']) / 'generation-inputs.json').exists())
+        return server.public_job(studio.prepare(job['id'], 'standing_front'))
 
     def test_real_photo_lifecycle_and_order_idempotency(self):
         cookie = self.session()
@@ -65,20 +73,20 @@ class StudioTests(unittest.TestCase):
         self.assertEqual(job['status'], 'awaiting_artwork')
         self.assertNotIn('session', job)
         inputs = server.read_json(server.job_path(job['id']) / 'generation-inputs.json')
-        self.assertEqual(inputs['referenced_image_paths'], [str((server.job_path(job['id']) / 'source.png').resolve()), *map(str, server.workflow.STYLE_ANCHORS)])
-        self.assertEqual(len(inputs['referenced_image_paths']), 5)
+        self.assertEqual(inputs['referenced_image_paths'], [str((server.job_path(job['id']) / 'source.png').resolve()), str(self.reference_root / 'peony/standing_front.png')])
+        self.assertEqual(len(inputs['referenced_image_paths']), 2)
         for path in inputs['referenced_image_paths']:
             with Image.open(path) as image:
                 image.verify()
         self.assertIn('IDENTITY ONLY', inputs['prompt'])
         self.assertIn('STYLE AND COMPOSITION ANCHORS', inputs['prompt'])
-        self.assertIn('images 2 and 3 as the primary', inputs['prompt'])
-        lotus = server.workflow.generation_inputs(server.job_path(job['id']) / 'source.png', 'lotus')
-        self.assertIn('image 4 as the primary', lotus['prompt'])
+        self.assertIn('looking forward', inputs['prompt'])
+        lotus = server.workflow.generation_inputs(server.job_path(job['id']) / 'source.png', 'lotus', 'standing_profile')
+        self.assertIn('nearby butterfly', lotus['prompt'])
         self.assertIn('generation-inputs.json', job['request'])
         complete = studio.complete(job['id'], [self.image_path])
         self.assertEqual(complete['completed_batches'], 1)
-        self.assertEqual(complete['candidates'][0]['style_anchors'], [p.name for p in server.workflow.STYLE_ANCHORS])
+        self.assertEqual(complete['candidates'][0]['style_anchors'], ['peony/standing_front.png'])
         data = {'key': secrets.token_hex(12), 'job_id': job['id'], 'candidate_id': complete['candidates'][0]['id'], 'approved': True, 'product': 'framed', 'size': '5x7', 'total': 1}
         status, order, _ = self.request('POST', '/api/orders', data, cookie)
         self.assertEqual(status, 201)
@@ -122,6 +130,22 @@ class StudioTests(unittest.TestCase):
         for private_path in ('/.env.local', '/generation.py'):
             self.assertEqual(self.request('GET', private_path)[0], 404)
 
+    def test_manual_unavailable_bucket_blocks_completion_until_prepared(self):
+        cookie = self.session()
+        job = self.create_job(cookie)
+        catalog = json.loads(server.workflow.CATALOG_PATH.read_text())
+        catalog['styles']['peony']['standing_front']['status'] = 'pending'
+        server.workflow.CATALOG_PATH.write_text(json.dumps(catalog))
+        waiting = studio.prepare(job['id'], 'standing_front')
+        self.assertEqual(waiting['status'], 'composition_unavailable')
+        with self.assertRaises(ValueError):
+            studio.complete(job['id'], [self.image_path])
+        catalog['styles']['peony']['standing_front']['status'] = 'ready'
+        server.workflow.CATALOG_PATH.write_text(json.dumps(catalog))
+        ready = studio.prepare(job['id'], 'standing_front')
+        self.assertEqual(ready['status'], 'awaiting_artwork')
+        self.assertEqual(studio.complete(job['id'], [self.image_path])['status'], 'ready')
+
     def test_product_quotes(self):
         self.assertEqual(server.quote('digital','digital')['total'],1900)
         self.assertEqual(server.quote('print','5x7')['total'],4500)
@@ -150,12 +174,13 @@ class StudioTests(unittest.TestCase):
         folder = server.job_path(job['id'])
         before = (folder / 'job.json').read_bytes()
         request_before = (folder / 'request.txt').read_bytes()
-        with patch.object(server.workflow, 'STYLE_ANCHORS', (Path(self.tmp.name) / 'missing.png',)):
+        with patch.object(server.workflow, 'REFERENCE_ROOT', Path(self.tmp.name) / 'missing'):
             status, error, _ = self.request('POST', f"/api/jobs/{job['id']}/retry", {}, cookie)
             self.assertEqual(status, 400)
-            self.assertIn('reference is missing', error['error'])
+            self.assertIn('not available', error['error'])
             status, _, _ = self.request('POST', '/api/jobs', {'image': base64.b64encode(self.photo).decode(), 'style': 'peony', 'rights': True}, cookie)
-            self.assertEqual(status, 400)
+            self.assertEqual(status, 201)
+            # Upload waits for assessment; it does not select references.
             # Reading completed artwork never rebuilds a request with newer directions.
             self.assertEqual(self.request('GET', '/api/jobs/' + job['id'], cookie=cookie)[0], 200)
         self.assertEqual((folder / 'job.json').read_bytes(), before)

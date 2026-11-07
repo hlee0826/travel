@@ -8,9 +8,9 @@ runpy.run_path(str(root/'deploy/prepare_vercel.py'))
 files=[root/name for name in ('server.py','generation.py','artifacts.py','pyproject.toml','uv.lock','vercel.json')]
 for directory in ('app','hosted','hosted_web','fonts'):
     files.extend(p for p in (root/directory).rglob('*') if p.is_file() and '__pycache__' not in p.parts and not any(part.startswith('.') for part in p.relative_to(root).parts))
-files.extend([root/'minhwa_workflow/__init__.py',root/'minhwa_workflow/workflow.py'])
-files.extend((root/'minhwa_workflow/style-anchors').glob('*.png'))
-assert len(list((root/'minhwa_workflow/style-anchors').glob('*.png')))==4
+files.extend([root/'minhwa_workflow/__init__.py',root/'minhwa_workflow/workflow.py',root/'minhwa_workflow/reference-catalog.json'])
+files.extend(p for p in (root/'minhwa_workflow/style-anchors').rglob('*')
+             if p.is_file() and p.suffix.lower() in ('.png', '.jpg', '.jpeg', '.webp'))
 assert (root/'hosted_web/upload.js').is_file()
 for file in files:
     assert file.is_file() and not file.is_symlink()
