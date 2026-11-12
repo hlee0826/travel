@@ -82,19 +82,23 @@ customer_gardens:
   - id: peony
     name_en: "Peony & Butterfly Garden"
     name_ko: 모란과 나비
-    reference_count_per_generation: 6
+    reference_count_per_generation: 5
   - id: lotus
     name_en: "Lotus & Butterfly Garden"
     name_ko: 연꽃과 나비
-    reference_count_per_generation: 6
+    reference_count_per_generation: 5
   - id: pine
     name_en: "Pine & Magpie Garden"
     name_ko: 소나무와 까치
-    reference_count_per_generation: 6
+    reference_count_per_generation: 5
 
 image_generation_workflow:
   path: minhwa_workflow
-  version: minhwa-gardens-v5
+  version: minhwa-gardens-v7
+  stages: [identity_study, customer_identity_approval, integrated_whole_canvas, final_qa]
+  identity_generation_reference_count: 1
+  integrated_generation_reference_count: 6
+  layer_compositing: false
   source_repository: https://github.com/hlee0826/travel
   source_commit: 4b0f5d44de20a27150e53fded056c72b65eb9ab7
   imported_on: "2026-11-05"

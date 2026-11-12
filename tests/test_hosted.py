@@ -191,7 +191,7 @@ class HostedTests(unittest.TestCase):
                 return True
             except ValueError:
                 return False
-        with patch.dict(os.environ,{'MINHWA_DAILY_BUDGET_CENTS':'600'}), concurrent.futures.ThreadPoolExecutor(4) as pool:
+        with patch.dict(os.environ,{'MINHWA_DAILY_BUDGET_CENTS':'1200'}), concurrent.futures.ThreadPoolExecutor(4) as pool:
             self.assertEqual(sum(pool.map(reserve,docs)),2)
 
     def test_paid_stage_is_never_repeated(self):
@@ -202,8 +202,8 @@ class HostedTests(unittest.TestCase):
             self.assertEqual(pipeline.run_stage(doc['id'],attempt,'checking_photo'),'continue')
             self.assertEqual(perform.call_count,1)
         with patch('hosted.pipeline.perform',side_effect=TimeoutError('secret provider details')) as perform:
-            self.assertEqual(pipeline.run_stage(doc['id'],attempt,'painting'),'stopped')
-            self.assertEqual(pipeline.run_stage(doc['id'],attempt,'painting'),'stopped')
+            self.assertEqual(pipeline.run_stage(doc['id'],attempt,'painting_identity'),'stopped')
+            self.assertEqual(pipeline.run_stage(doc['id'],attempt,'painting_identity'),'stopped')
             self.assertEqual(perform.call_count,1)
         result=self.client.get('/api/jobs/'+doc['id']).json()
         self.assertEqual(result['status'],'uncertain');self.assertNotIn('secret',str(result));self.assertFalse(result['can_retry'])
@@ -222,11 +222,15 @@ class HostedTests(unittest.TestCase):
     def test_quality_gate_and_artifacts_publish_atomically(self):
         doc,_=self.real(); attempt=doc['attempt_id']
         responses=[{'verdict':{'usable':True,'pet_count':1,'species':'cat','face_visible':True,'details_clear':True}},
-                   {'reference_hashes':['a']*7}, {'verdict':{k:True for k in pipeline.ART_FIELDS}},
+                   {'reference_hashes':['a']},
+                   {'verdict':{k:(True if v=='boolean' else 'passed') for k,v in pipeline.IDENTITY_FIELDS.items()},'identity_hash':'identity-hash'},
+                   {'reference_hashes':['b']*6},
+                   {'verdict':{k:(True if v=='boolean' else 'passed') for k,v in pipeline.ART_FIELDS.items()}},
                    {'candidate':{'id':attempt,'url':f'/media/{doc["id"]}/art-{attempt}.png','review_status':'approved','artifacts_version':1,'dimensions':[2432,3040]}}]
-        with patch('hosted.pipeline.perform',side_effect=responses):
-            for stage in pipeline.STAGES:
-                pipeline.run_stage(doc['id'],attempt,stage)
+        with patch('hosted.pipeline.perform',side_effect=responses),patch('hosted.pipeline.storage.read',return_value=b'identity'),patch('hosted.pipeline.storage.put'):
+            for stage in pipeline.STAGES[:3]:pipeline.run_stage(doc['id'],attempt,stage)
+            service.approve_identity(self.session,doc['id'],{'key':secrets.token_hex(12),'approved':True})
+            for stage in pipeline.STAGES[3:]:pipeline.run_stage(doc['id'],attempt,stage)
         result=self.client.get('/api/jobs/'+doc['id']).json()
         self.assertEqual(result['status'],'ready');self.assertEqual(len(result['candidates']),1)
         self.assertEqual(pipeline.run_stage(doc['id'],attempt,'rendering'),'ready')
@@ -236,9 +240,13 @@ class HostedTests(unittest.TestCase):
     def test_flagged_art_stays_private(self):
         doc,_=self.real(); attempt=doc['attempt_id']
         results=[{'verdict':{'usable':True,'pet_count':1,'species':'cat','face_visible':True,'details_clear':True}},
-                 {},{'verdict':{'likeness':False}}]
-        with patch('hosted.pipeline.perform',side_effect=results):
+                 {'reference_hashes':['a']},
+                 {'verdict':{k:(True if v=='boolean' else 'passed') for k,v in pipeline.IDENTITY_FIELDS.items()},'identity_hash':'identity-hash'},
+                 {'reference_hashes':['b']*6},{'verdict':{'likeness':False}}]
+        with patch('hosted.pipeline.perform',side_effect=results),patch('hosted.pipeline.storage.read',return_value=b'identity'),patch('hosted.pipeline.storage.put'):
             for stage in pipeline.STAGES[:3]:pipeline.run_stage(doc['id'],attempt,stage)
+            service.approve_identity(self.session,doc['id'],{'key':secrets.token_hex(12),'approved':True})
+            for stage in pipeline.STAGES[3:5]:pipeline.run_stage(doc['id'],attempt,stage)
         result=self.client.get('/api/jobs/'+doc['id']).json()
         self.assertEqual(result['status'],'awaiting_review');self.assertEqual(result['candidates'],[])
         self.assertEqual(self.client.get(f'/media/{doc["id"]}/art-{attempt}.png').status_code,404)
@@ -253,17 +261,22 @@ class HostedTests(unittest.TestCase):
             if (bucket,key) in objects:self.assertEqual(objects[bucket,key],raw)
             objects[bucket,key]=raw
         photo={'usable':True,'pet_count':1,'species':'dog','face_visible':True,'details_clear':True,'identity':'white dog','unseen_features':'none','reason':'good'}
+        identity_quality={k:(True if v=='boolean' else 'passed') for k,v in pipeline.IDENTITY_FIELDS.items()}
         quality={k:True for k in pipeline.ART_FIELDS};quality['reason']='passed'
         with patch.dict(os.environ,{'OPENAI_API_KEY':'test-only'}),patch('hosted.storage.read',side_effect=lambda b,k,**kw:objects[b,k]),patch('hosted.storage.put',side_effect=put),patch('hosted.pipeline.OpenAIReview') as reviewer,patch('hosted.pipeline.OpenAIImages') as images:
             reviewer.return_value.photo.return_value=(photo,{})
+            reviewer.return_value.identity_study.return_value=(identity_quality,{})
             reviewer.return_value.artwork.return_value=(quality,{})
             images.return_value.generate.return_value=(art.getvalue(),{})
-            for stage in pipeline.STAGES:pipeline.run_stage(doc['id'],attempt,stage)
+            for stage in pipeline.STAGES[:3]:pipeline.run_stage(doc['id'],attempt,stage)
+            service.approve_identity(self.session,doc['id'],{'key':secrets.token_hex(12),'approved':True})
+            for stage in pipeline.STAGES[3:]:pipeline.run_stage(doc['id'],attempt,stage)
             inputs=images.return_value.generate.call_args.args[0]
-            self.assertEqual(len(inputs['referenced_image_paths']),7)
-            self.assertEqual(len(inputs['reference_hashes']),7)
-            self.assertIn('CUSTOMER IDENTITY AND POSE AUTHORITY',inputs['prompt'])
-            self.assertEqual(len(reviewer.return_value.artwork.call_args.args[2]),6)
+            self.assertEqual(images.return_value.generate.call_count,2)
+            self.assertEqual(len(inputs['referenced_image_paths']),6)
+            self.assertEqual(len(inputs['reference_hashes']),6)
+            self.assertIn('APPROVED PAINTED IDENTITY STUDY',inputs['prompt'])
+            self.assertEqual(len(reviewer.return_value.artwork.call_args.args[2]),5)
         self.assertIn(('art',f'{doc["id"]}/{attempt}/master.png'),objects)
         self.assertIn(('art',f'{doc["id"]}/{attempt}/print-12x16.png'),objects)
         body={'key':secrets.token_hex(12),'job_id':doc['id'],'candidate_id':attempt,'approved':True,'product':'digital','size':'digital'}

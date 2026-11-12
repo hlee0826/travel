@@ -24,11 +24,12 @@ API mode requires `MINHWA_IMAGE_PROVIDER=openai`, `OPENAI_API_KEY`, Images Reque
 
 1. Upload JPEG, PNG, WebP or HEIC, up to 20 MB / 40 megapixels, at least 600 pixels on each edge. Consent is required. Files are decoded, orientation-corrected, normalized and stripped of metadata.
 2. A photo check requires one identifiable cat or dog with clear facial features. Rejected photos never reach the image endpoint.
-3. The durable local queue creates one high-quality 2432 × 3040 painting using the original photo plus six curated references for the selected garden. The photo is the authority for individual identity, pose, head angle, gaze and crop; the references supply only Korean minhwa material, motif, palette, composition and spatial language. No previous output is used as a retry reference.
-4. Automated review checks likeness, markings, anatomy, pose fidelity, painted appearance, fresh setting, selected-garden evidence, motif coherence, pet dominance, safe margins and unwanted text. A result that passes every check is released automatically for customer review. Any failed or uncertain criterion keeps the result private for explicit studio review.
-5. The customer compares the approved painting with their photo and explicitly approves it. Corrections can request a fresh interpretation while retaining earlier approved work.
-6. Choose digital, print or natural-oak framed print. Physical sizes are 5 × 7 inches for your desk and 12 × 16 inches for your wall. Place a clearly labeled test order; no payment or supplier is contacted.
-7. PNG/JPEG downloads use the saved approved master, including the optional name. The preview watermark is separate. A 12 × 16 sheet centers the complete 12 × 15 painting with half-inch top/bottom borders; it never crops the artwork.
+3. The durable queue creates a 2432 × 3040 undecorated identity study from the photo alone. Automated review checks likeness, markings, pose, crop, invented anatomy, matte pigment, photographic shine, hanji integration and absence of decoration.
+4. The customer approves that identity study before the garden stage can start.
+5. A separate image call uses the approved painted study plus five selected garden references. It repaints the full canvas from scratch—never layer-compositing the study—with explicit pet scale, motif scale, quiet-space and returning-visual-path contracts.
+6. Final automated review independently gates identity, anatomy, pose, selected-garden evidence, material unity, painted pet treatment, photographic shine, shared edges and light, pet/motif scale, quiet space, visual path, safe margins and overall wall-art harmony. Every boolean must pass before customer review.
+7. Choose digital, print or natural-oak framed print. Physical sizes are 5 × 7 inches for your desk and 12 × 16 inches for your wall. Place a clearly labeled test order; no payment or supplier is contacted.
+8. PNG/JPEG downloads use the saved approved master, including the optional name. The preview watermark is separate. A 12 × 16 sheet centers the complete 12 × 15 painting with half-inch top/bottom borders; it never crops the artwork.
 
 ## Flagged artwork review
 
@@ -49,7 +50,7 @@ Manual mode still supports `studio.py complete JOB_ID /absolute/path/artwork.png
 
 ## Art direction and saved files
 
-`minhwa_workflow/workflow.py` is the authoritative `minhwa-gardens-v5` brief. Image 1 supplies the pet's identity and photographed pose. Images 2–7 are the six curated references for the selected peony, lotus, or pine garden, each assigned one art-direction role. Inputs are normalized/downscaled for transmission, with original hashes recorded. Missing or changed references block generation.
+`minhwa_workflow/workflow.py` is the authoritative `minhwa-gardens-v7` brief. Stage 1 uses only the customer photo to make an undecorated identity study. After approval, stage 2 uses that painted study plus five curated references for the selected peony, lotus, or pine garden. Inputs are normalized/downscaled for transmission, with hashes recorded. Missing or changed references block generation.
 
 The pet and garden must share a traditional painted language, but motifs are composed around the photographed posture rather than forcing a butterfly or magpie sightline. No source-room background, photographic cutout, copied reference identity, unrelated motif accumulation, text, seal or signature. Optional names are rendered once into the master with bundled OFL-licensed Noto Serif KR. Likeness is reviewed, not mathematically guaranteed.
 
@@ -60,7 +61,7 @@ The pet and garden must share a traditional painted language, but motifs are com
 - One process owns the worker. Atomic file writes and a cross-process storage lock coordinate the server and studio CLI. Queued jobs survive restarts; in-flight work is held for reconciliation rather than repeated.
 - Duplicate upload and checkout submissions are idempotent. Refreshing or changing pages does not trigger generation.
 - Maximum three attempts per portrait, three per identical photo per day, six per session per day, and two accepted paintings per portrait.
-- Each attempt reserves $3 against a default $15 rolling 24-hour admission allowance (`MINHWA_DAILY_BUDGET_CENTS`). Failed/uncertain attempts retain their reservation. This is a conservative request allowance, **not a guaranteed provider billing cap**. Metrics report estimates where usage is available; OpenAI billing is authoritative.
+- Each attempt reserves $6 against a default $15 rolling 24-hour admission allowance (`MINHWA_DAILY_BUDGET_CENTS`) because a new portrait normally uses two image generations. Failed/uncertain attempts retain their reservation. This is a conservative request allowance, **not a guaranteed provider billing cap**. Metrics report estimates where usage is available; OpenAI billing is authoritative.
 - Local disk and the browser's session cookie are required. Data has no automatic deletion or backup. Do not expose the Python listener publicly. The Vercel + Supabase version for private hosted testing is implemented in [hosting setup](docs/hosting.md); publishing and live verification are still pending.
 
 ## Validation

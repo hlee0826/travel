@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 from PIL import Image, ImageOps, UnidentifiedImageError
 from pillow_heif import register_heif_opener
 from minhwa_workflow import workflow
-from generation import OpenAIImages, OpenAIReview, settings, ART_FIELDS, IMAGE_SIZE
+from generation import OpenAIImages, OpenAIReview, settings, ART_FIELDS, IDENTITY_FIELDS, IMAGE_SIZE
 from artifacts import artwork_files, matted_print
 
 register_heif_opener(thumbnails=False)
@@ -32,8 +32,9 @@ WAKE = threading.Event()
 STOP = threading.Event()
 DAILY_BUDGET_CENTS = 1500
 PUBLIC_ORIGIN = ''
-ATTEMPT_RESERVATION_CENTS = 300
-ACTIVE = {'queued', 'checking_photo', 'painting', 'checking_artwork'}
+ATTEMPT_RESERVATION_CENTS = 600
+ACTIVE = {'queued', 'checking_photo', 'painting_identity', 'checking_identity',
+          'painting_integrated', 'checking_artwork'}
 FEEDBACK = {'likeness': 'Preserve the distinctive ears, muzzle and recognizable face more closely.',
             'markings': 'Match the visible coat colors and patch locations more closely.',
             'painting': 'Use clearly painted pigment shapes, not photographic fur or a cutout.',
@@ -138,18 +139,24 @@ def job_path(job_id):
 
 
 def prepare_generation(job):
-    inputs = workflow.generation_inputs(job_path(job['id']) / 'source.png', job['style'])
     folder = job_path(job['id'])
+    identity_phase = job.get('identity_study_status') != 'approved'
+    inputs = (workflow.identity_inputs(folder / 'source.png') if identity_phase else
+              workflow.generation_inputs(folder / 'identity-study.png', job['style']))
     job['workflow_version'] = workflow.WORKFLOW_VERSION
-    job['style_anchors'] = inputs['reference_files']
+    job['style_anchors'] = inputs.get('reference_files', [])
     save_json(folder / 'generation-inputs.json', inputs)
-    (folder / 'request.txt').write_text(f'''Generate the pending Minhwa portrait {job['id']} in this local workspace. Art direction: {workflow.WORKFLOW_VERSION}.
+    phase = 'undecorated identity study' if identity_phase else 'integrated garden portrait'
+    count = len(inputs['referenced_image_paths'])
+    followup = ('The website will show the identity study for customer approval before any garden is generated.'
+                if identity_phase else 'The website will detect the completed integrated artwork.')
+    (folder / 'request.txt').write_text(f'''Generate the pending {phase} for {job['id']} in this local workspace. Art direction: {workflow.WORKFLOW_VERSION}.
 Read {folder / 'generation-inputs.json'} and inspect every image listed in referenced_image_paths.
-Call the built-in image generation tool using that JSON's prompt, referenced_image_paths, and transparent_background arguments. Attach all seven actual image files in the listed order. Do not substitute text descriptions, omit anchors, use previous outputs, apply local filters, or call an external model API.
-Generate one or two candidates. Before attaching, inspect each against the customer photo and art references for individual likeness, source-pose fidelity, traditional painting integrity, coherent anatomy, garden-specific motif coherence, pet dominance, and safe margins. Revise failures.
+Call the built-in image generation tool using that JSON's prompt, referenced_image_paths, and transparent_background arguments. Attach all {count} actual image files in the listed order. Do not substitute text descriptions, omit references, use unrelated outputs, apply local filters, or call an external model API.
+Generate one candidate and inspect it against the stage-specific prompt before attaching it.
 Save the outputs in this workspace, then run:
-.venv/bin/python studio.py complete {job['id']} /absolute/path/candidate-1.png [/absolute/path/candidate-2.png]
-The website will detect the completed artwork. Do not replace the source photo or style anchors.
+.venv/bin/python studio.py complete {job['id']} /absolute/path/candidate-1.png
+{followup} Do not replace the source photo, approved identity study, or garden references.
 ''')
 
 
@@ -163,12 +170,48 @@ def public_job(job):
     return visible | {'request': request}
 
 
+def approve_identity(job_id, approved):
+    with LOCK:
+        job = read_json(job_path(job_id) / 'job.json')
+        if job.get('identity_study_status') != 'pending' or job['status'] != 'awaiting_identity_approval':
+            raise ValueError('This identity study is not waiting for approval.')
+        if approved:
+            job.update(identity_study_status='approved', identity_approved_at=time.time(), error=None)
+            if job.get('generation_provider') == 'openai':
+                job['attempts'][-1]['status'] = 'queued'
+                job['status'] = 'queued'
+                save_json(job_path(job_id) / 'job.json', job)
+                WAKE.set()
+            else:
+                prepare_generation(job)
+                job['status'] = 'awaiting_artwork'
+                save_json(job_path(job_id) / 'job.json', job)
+        else:
+            job.update(identity_study_status='rejected', status='rejected',
+                       error='This identity study was not approved. Request another interpretation.')
+            if job.get('attempts'):
+                job['attempts'][-1]['status'] = 'rejected'
+            save_json(job_path(job_id) / 'job.json', job)
+        return job
+
+
 def complete_artwork(job_id, images, metadata=None):
     with LOCK:
         folder = job_path(job_id)
         job = read_json(folder / 'job.json')
-        if job['demo'] or job['status'] != 'awaiting_artwork':
+        if job['demo'] or job['status'] not in ('awaiting_identity_artwork', 'awaiting_artwork'):
             raise ValueError('Only a pending real-photo job can receive artwork.')
+        if job['status'] == 'awaiting_identity_artwork':
+            if len(images) != 1:
+                raise ValueError('Attach one identity-study candidate.')
+            raw, dimensions = image_bytes(images[0])
+            save_bytes(folder / 'identity-study.png', raw)
+            job.update(status='awaiting_identity_approval', error=None,
+                       identity_study='/media/' + job_id + '/identity-study.png',
+                       identity_study_status='pending', identity_study_dimensions=list(dimensions),
+                       identity_study_hash=hashlib.sha256(raw).hexdigest())
+            save_json(folder / 'job.json', job)
+            return job
         if not 1 <= len(images) <= 2:
             raise ValueError('Attach one or two portrait candidates.')
         prepared = [image_bytes(raw) for raw in images]
@@ -243,18 +286,45 @@ def generate_artwork(job_id, generator, reviewer=None):
     workspace = folder / 'attempts' / attempt['id']
     workspace.mkdir(parents=True, exist_ok=True)
     try:
-        photo, photo_meta = provider_call(job, 'checking_photo', lambda: reviewer.photo(folder / 'source.png', job['session']))
-        save_json(workspace / 'photo-review.json', {'verdict': photo, **photo_meta})
-        if not (photo['usable'] and photo['pet_count'] == 1 and photo['species'].lower() in ('cat', 'dog')
-                and photo['face_visible'] and photo['details_clear']):
+        if job.get('identity_study_status') != 'approved':
+            photo, photo_meta = provider_call(job, 'checking_photo', lambda: reviewer.photo(folder / 'source.png', job['session']))
+            save_json(workspace / 'photo-review.json', {'verdict': photo, **photo_meta})
+            if not (photo['usable'] and photo['pet_count'] == 1 and photo['species'].lower() in ('cat', 'dog')
+                    and photo['face_visible'] and photo['details_clear']):
+                with LOCK:
+                    attempt['status'] = 'needs_photo'
+                    update_job(job, status='needs_photo', error=photo['reason'] or 'Please choose a clear photo of one cat or dog.')
+                return
+            identity = photo['identity'] + '\nUnseen or uncertain: ' + photo['unseen_features']
+            inputs = workflow.identity_inputs(folder / 'source.png', identity, FEEDBACK.get(job.get('feedback'), ''))
+            save_json(workspace / 'identity-inputs.json', inputs)
+            raw, metadata = provider_call(job, 'painting_identity', lambda: generator.generate(inputs, job['session']))
+            raw, dimensions = image_bytes(raw)
+            if dimensions != IMAGE_SIZE or hashlib.sha256(raw).hexdigest() == job['source_hash']:
+                raise ValueError('The identity study failed its integrity check.')
+            study = workspace / 'identity-study.png'
+            save_bytes(study, raw)
+            quality, review_meta = provider_call(job, 'checking_identity', lambda: reviewer.identity_study(
+                folder / 'source.png', study, identity, job['session']))
+            save_json(workspace / 'identity-review.json', {'verdict': quality, **review_meta})
             with LOCK:
-                attempt['status'] = 'needs_photo'
-                update_job(job, status='needs_photo', error=photo['reason'] or 'Please choose a clear photo of one cat or dog.')
+                if not all(quality.get(k) is True for k in IDENTITY_FIELDS if k != 'reason'):
+                    attempt['status'] = 'rejected'
+                    update_job(job, status='rejected', identity=identity,
+                               identity_study_status='failed_qa',
+                               error='The identity study did not pass likeness and material checks. Request another interpretation.')
+                    return
+                save_bytes(folder / 'identity-study.png', raw)
+                attempt['status'] = 'awaiting_identity_approval'
+                update_job(job, status='awaiting_identity_approval', identity=identity, error=None,
+                           identity_study=f'/media/{job_id}/identity-study.png',
+                           identity_study_status='pending', identity_study_dimensions=list(dimensions),
+                           identity_study_hash=hashlib.sha256(raw).hexdigest())
             return
-        identity = photo['identity'] + '\nUnseen or uncertain: ' + photo['unseen_features']
-        inputs = workflow.generation_inputs(folder / 'source.png', job['style'], identity, FEEDBACK.get(job.get('feedback'), ''))
+        identity = job['identity']
+        inputs = workflow.generation_inputs(folder / 'identity-study.png', job['style'], identity, FEEDBACK.get(job.get('feedback'), ''))
         save_json(workspace / 'inputs.json', inputs)
-        raw, metadata = provider_call(job, 'painting', lambda: generator.generate(inputs, job['session']))
+        raw, metadata = provider_call(job, 'painting_integrated', lambda: generator.generate(inputs, job['session']))
         raw, dimensions = image_bytes(raw)
         if dimensions != IMAGE_SIZE:
             raise ValueError('The returned artwork has an unexpected size. The studio will check this attempt.')
@@ -430,11 +500,13 @@ class Handler(BaseHTTPRequestHandler):
                 if match:
                     session, _ = self.session()
                     return self.send(200, public_job(self.owned_job(match[1], session)))
-                match = re.fullmatch(r'/media/([a-f0-9]{24})/(source\.png|art-[a-f0-9]+\.png)', path)
+                match = re.fullmatch(r'/media/([a-f0-9]{24})/(source\.png|identity-study\.png|art-[a-f0-9]+\.png)', path)
                 if match:
                     session, _ = self.session()
                     job = self.owned_job(match[1], session)
-                    if match[2] != 'source.png' and not any(c['url'].endswith('/' + match[2]) and c.get('review_status', 'approved') == 'approved' for c in job['candidates']):
+                    if match[2] == 'identity-study.png' and job.get('identity_study_status') not in ('pending','approved'):
+                        raise FileNotFoundError()
+                    if match[2].startswith('art-') and not any(c['url'].endswith('/' + match[2]) and c.get('review_status', 'approved') == 'approved' for c in job['candidates']):
                         raise FileNotFoundError()
                     candidate = next((c for c in job['candidates'] if c['url'].endswith('/' + match[2])), None)
                     if candidate and candidate.get('artifacts_version'):
@@ -518,7 +590,7 @@ class Handler(BaseHTTPRequestHandler):
                     job_id = secrets.token_hex(12)
                     folder = job_path(job_id)
                     folder.mkdir(parents=True)
-                    job = {'id': job_id, 'session': session, 'name': name.strip(), 'style': body['style'], 'demo': demo, 'status': 'ready' if demo else 'awaiting_artwork', 'created': time.time(), 'completed_batches': 1 if demo else 0, 'candidates': [], 'source': None, 'source_dimensions': dimensions, 'error': None, 'workflow_version': workflow.WORKFLOW_VERSION}
+                    job = {'id': job_id, 'session': session, 'name': name.strip(), 'style': body['style'], 'demo': demo, 'status': 'ready' if demo else 'awaiting_identity_artwork', 'created': time.time(), 'completed_batches': 1 if demo else 0, 'candidates': [], 'source': None, 'source_dimensions': dimensions, 'error': None, 'workflow_version': workflow.WORKFLOW_VERSION}
                     job.update(submit_key=submit_key, source_hash=source_hash, consent_at=time.time() if not demo else None,
                                product_preference=preference, size_preference=preferred_size)
                     if demo:
@@ -543,7 +615,7 @@ class Handler(BaseHTTPRequestHandler):
                         raise ValueError('The included portrait batches have been used.')
                     if job.get('generation_provider') == 'openai' and not GENERATOR:
                         raise ValueError('Enable the OpenAI provider before retrying this portrait.')
-                    if job['status'] in ACTIVE | {'awaiting_artwork', 'awaiting_review'}:
+                    if job['status'] in ACTIVE | {'awaiting_identity_artwork', 'awaiting_identity_approval', 'awaiting_artwork', 'awaiting_review'}:
                         return self.send(200, public_job(job))
                     if job['status'] in ('uncertain', 'needs_photo'):
                         raise ValueError('This attempt needs a studio review or a different photo before retrying.')
@@ -555,9 +627,16 @@ class Handler(BaseHTTPRequestHandler):
                     if job.get('generation_provider') == 'openai':
                         start_generation(job)
                     else:
-                        job['status'], job['error'] = 'awaiting_artwork', None
+                        job['status'], job['error'] = ('awaiting_artwork' if job.get('identity_study_status') == 'approved'
+                                                      else 'awaiting_identity_artwork'), None
                         save_json(job_path(job['id']) / 'job.json', job)
                     return self.send(200, public_job(job))
+                match = re.fullmatch(r'/api/jobs/([a-f0-9]{24})/identity-approval', path)
+                if match:
+                    job = self.owned_job(match[1], session)
+                    if type(body.get('approved')) is not bool:
+                        raise ValueError('Choose whether this identity study looks like your pet.')
+                    return self.send(200, public_job(approve_identity(job['id'], body['approved'])))
                 if path == '/api/orders':
                     job = self.owned_job(str(body.get('job_id', '')), session)
                     candidate = next((c for c in job['candidates'] if c['id'] == body.get('candidate_id')), None)

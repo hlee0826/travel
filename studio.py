@@ -48,7 +48,7 @@ def main():
         print(json.dumps(rows, indent=2))
     elif args.command == 'pending':
         with LOCK:
-            pending = [j for p in (DATA / 'jobs').glob('*/job.json') if (j := read_json(p))['status'] in ('awaiting_artwork', 'awaiting_review', 'uncertain')]
+            pending = [j for p in (DATA / 'jobs').glob('*/job.json') if (j := read_json(p))['status'] in ('awaiting_identity_artwork', 'awaiting_identity_approval', 'awaiting_artwork', 'awaiting_review', 'uncertain')]
         for job in pending:
             print(f"{job['id']} | {job['status']} | {job['style']} | {job_path(job['id'])}")
             for candidate in job['candidates']:
@@ -69,7 +69,7 @@ def main():
         with LOCK:
             folder = job_path(args.job_id)
             job = read_json(folder / 'job.json')
-            if job['status'] != 'awaiting_artwork':
+            if job['status'] not in ('awaiting_identity_artwork', 'awaiting_artwork'):
                 raise ValueError('Only a pending manual job can be marked failed.')
             job['status'], job['error'] = 'failed', args.reason[:200]
             save_json(folder / 'job.json', job)

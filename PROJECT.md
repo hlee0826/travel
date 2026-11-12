@@ -215,16 +215,15 @@ Its fictional subjects demonstrate pose, material integration, and motif balance
 they do not replace intake, the undecorated identity study, likeness tests,
 customer approval, the tradition gate, or the 82/100 final QA requirement.
 
-### Decision 008 — Three customer-facing garden recipes
+### Decision 008 — Three customer-facing garden recipes (superseded runtime attachment model)
 
 The website offers Peony & Butterfly, Lotus & Butterfly, and Pine & Magpie
-gardens using the stable internal values `peony`, `lotus`, and `pine`. Each
-generation attaches one customer photo plus six curated art references from the
-selected garden. The photo alone governs individual identity and photographed
-pose; references govern material, motif, palette, composition, and symbolic
-space. Garden elements move around the pet and never force its gaze or posture.
+gardens using the stable internal values `peony`, `lotus`, and `pine`. The
+customer photo governs individual identity and photographed pose; references
+govern material, motif, palette, composition, and symbolic space. Decision 010
+replaces the earlier single-call photo-plus-six-reference attachment model.
 
-### Decision 009 — Balanced pose calibration
+### Decision 009 — Balanced pose calibration (library calibration history)
 
 Each six-image runtime garden set uses a 2+4 pose balance: one fictional cat and
 one fictional dog face directly toward the viewer, while four plates preserve
@@ -232,6 +231,23 @@ natural three-quarter, standing, reclining, and fauna-interaction compositions.
 The direct plates correct the source library's sideways-gaze bias without
 removing the appealing butterfly or magpie interactions. The customer photo
 remains the only authority for the commissioned pet's actual pose and gaze.
+
+### Decision 010 — Approved identity study followed by whole-canvas synthesis
+
+Workflow version `minhwa-gardens-v7` uses two image-generation calls. The first
+uses only the customer photo to create an undecorated identity study on warm
+hanji. Automated material and likeness gates plus customer approval lock the
+pet before any garden is developed. The second call uses the approved painted
+study plus five role-specific references from the selected garden and repaints
+the complete canvas from scratch. It must not paste, mask, preserve, or reuse
+identity-study pixels. The original photograph remains final QA evidence.
+
+Final synthesis follows a composition contract: 60–68% pet height for a bust or
+52–60% for a visible full body, 28–35% quiet paper, a 15–24% main garden
+structure, subordinate support/fauna ranges, and a visual path that returns to
+the pet. Separate hard gates cover material unity, painted pet treatment,
+photographic shine, shared edge and light logic, pet/motif scale, quiet-space
+distribution, safe margins, and overall wall-art harmony.
 
 ## 10. Recommended next production milestone
 

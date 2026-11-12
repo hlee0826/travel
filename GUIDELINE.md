@@ -803,6 +803,37 @@ First and foremost, a faithful and immediately recognizable [full-body/seated] c
 4. Refine face, paws, tail, and marking edges locally.
 5. Reduce global sharpness outside the face.
 
+### 13.1 Technical generation sequence
+
+Production uses two separate image-generation calls with a hard customer gate
+between them:
+
+1. **Undecorated identity study:** attach only the normalized customer photo.
+   Generate the pet on plain warm hanji; preserve visible posture, head angle,
+   gaze, markings, expression, and crop; do not invent hidden anatomy.
+2. **Identity material gate:** require likeness, markings, pose, crop, no
+   invented anatomy, visibly painted pet, matte pigment, no photographic shine,
+   hanji integration, and absence of decoration. Every criterion must pass.
+3. **Customer identity approval:** no motif or garden generation begins until
+   the customer approves the study.
+4. **Integrated whole-canvas synthesis:** attach the approved painted study and
+   five role-specific references from the chosen garden. Repaint pet, ground,
+   paper, and motifs together from scratch. The study is identity authority,
+   not a foreground layer; do not paste, mask, inpaint around, preserve, or
+   reuse its pixels.
+5. **Final independent QA:** compare the final painting with the original photo
+   for identity and pose, while using garden references only for art direction.
+   Hard gates include material unity, painted-pet treatment, absence of
+   photographic shine, shared edge and light logic, pet and motif scale,
+   28–35% quiet-space distribution, a visual path returning to the pet, safe
+   margins, and overall wall-art harmony.
+
+For a bust or close three-quarter crop, target 60–68% pet height; for a visible
+full body, target 52–60%. The main garden structure occupies 15–24%, a support
+mass 6–10%, and each small bird or butterfly 3–5%. Final-art retries reuse the
+approved identity study; identity-stage failures or customer rejection return
+to the identity call.
+
 ### Phase 4 — Finish
 
 1. Composite verified calligraphy and seal.

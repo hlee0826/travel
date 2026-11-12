@@ -13,7 +13,8 @@ async def stage(job_id: str, attempt_id: str, name: str) -> str:
 
 @wf.workflow
 async def paint(job_id: str, attempt_id: str) -> str:
-    for name in ('checking_photo', 'painting', 'checking_artwork', 'rendering'):
+    for name in ('checking_photo', 'painting_identity', 'checking_identity',
+                 'painting_integrated', 'checking_artwork', 'rendering'):
         result = await stage(job_id, attempt_id, name)
         while result == 'busy':
             await workflow.sleep(30)

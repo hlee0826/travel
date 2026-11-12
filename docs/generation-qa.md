@@ -4,16 +4,20 @@ The local upload → generated painting → automated review/release (studio rev
 
 ## November 11 three-garden workflow update
 
-`minhwa-gardens-v5` adds Peony & Butterfly, Lotus & Butterfly, and Pine &
-Magpie as stable customer choices. Each attempt now attaches one customer photo
-plus six curated references from only the selected garden. The photo governs
-individual identity, photographed pose, head angle, gaze, and crop; the six
-references have separate material, motif, palette, composition, and spatial
-roles. Generation and review no longer require a butterfly sightline.
+`minhwa-gardens-v7` adds Peony & Butterfly, Lotus & Butterfly, and Pine &
+Magpie as stable customer choices. Each new portrait first attaches only the
+customer photo to produce a customer-approved undecorated identity study. A
+second call attaches that study plus five curated references from only the
+selected garden. The photograph governs individual identity and photographed
+pose; the study carries the approved painted identity into final synthesis; the
+five references have separate material, motif, palette, composition, and
+spatial roles. The complete final canvas is repainted in one pass rather than
+assembled from layers.
 
 The pine recipe requires one weathered pine structure and exactly one magpie,
 with no butterfly, peony, or lotus. Review now explicitly checks pose fidelity,
-motif coherence, and pet dominance. Local workflow tests and the available
+motif coherence, material unity, scale, quiet space, returning visual path, and
+overall wall-art harmony. Local workflow tests and the available
 application suite pass; database-dependent hosted tests remain skipped without
 the disposable database configuration. The selector, all three previews,
 mobile width, and console were checked in a local browser. No paid image

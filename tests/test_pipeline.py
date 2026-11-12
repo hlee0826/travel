@@ -13,7 +13,7 @@ from unittest.mock import Mock, patch
 from PIL import Image
 import server
 from artifacts import artwork_files, matted_print
-from generation import ART_FIELDS, OpenAIReview, PHOTO_FIELDS
+from generation import ART_FIELDS, IDENTITY_FIELDS, OpenAIReview, PHOTO_FIELDS
 
 
 def png(size, color):
@@ -38,7 +38,9 @@ class PipelineTests(unittest.TestCase):
             'details_clear': True, 'identity': 'Upright ears; tan eyebrows; black coat.',
             'unseen_features': 'Tail hidden.', 'reason': 'Clear face.'}
         self.quality = {k: True for k in ART_FIELDS if k != 'reason'} | {'reason': 'All visible criteria match.'}
+        self.identity_quality = {k: True for k in IDENTITY_FIELDS if k != 'reason'} | {'reason': 'Identity and material pass.'}
         server.REVIEWER.photo.return_value = (self.verdict, {'usage': {'input_tokens': 500}})
+        server.REVIEWER.identity_study.return_value = (self.identity_quality, {'usage': {'input_tokens': 1000}})
         server.REVIEWER.artwork.return_value = (self.quality, {'usage': {'input_tokens': 2000}})
         server.GENERATOR.generate.return_value = (self.art, {'provider': 'openai', 'model': 'test', 'request_id': 'test-image'})
         self.cookie = self.request('GET', '/api/session')[2]['Set-Cookie'].split(';')[0]
@@ -73,6 +75,11 @@ class PipelineTests(unittest.TestCase):
 
     def run_job(self, job):
         server.generate_artwork(job['id'], server.GENERATOR, server.REVIEWER)
+        current = self.stored(job)
+        if current['status'] == 'awaiting_identity_approval':
+            status, current, _ = self.request('POST', f"/api/jobs/{job['id']}/identity-approval", {'approved': True})
+            self.assertEqual(status, 200, current)
+            server.generate_artwork(job['id'], server.GENERATOR, server.REVIEWER)
         return self.stored(job)
 
     def test_product_preferences_survive_reload_and_invalid_sizes_fail(self):
@@ -107,14 +114,19 @@ class PipelineTests(unittest.TestCase):
         worker.start()
         try:
             deadline = time.time() + 5
+            while time.time() < deadline and any(self.stored(j)['status'] != 'awaiting_identity_approval' for j in (first, second)):
+                time.sleep(.02)
+            for job in (first, second):
+                self.assertEqual(self.request('POST', f"/api/jobs/{job['id']}/identity-approval", {'approved': True})[0], 200)
             while time.time() < deadline and self.stored(second)['status'] != 'ready':
                 time.sleep(.02)
             self.assertEqual(self.stored(first)['status'], 'ready')
             self.assertEqual(self.stored(second)['status'], 'ready')
             calls = server.GENERATOR.generate.call_args_list
-            self.assertEqual(len(calls), 2)
+            self.assertEqual(len(calls), 4)
             self.assertIn(first['id'], calls[0].args[0]['referenced_image_paths'][0])
             self.assertIn(second['id'], calls[1].args[0]['referenced_image_paths'][0])
+            self.assertTrue(calls[2].args[0]['referenced_image_paths'][0].endswith('identity-study.png'))
         finally:
             server.STOP.set(); server.WAKE.set(); worker.join(5)
             self.assertFalse(worker.is_alive())
@@ -193,10 +205,10 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(len(self.stored(job)['attempts']), 2)
 
     def test_spending_cap_includes_failed_and_pending_reservations(self):
-        server.DAILY_BUDGET_CENTS = 600
+        server.DAILY_BUDGET_CENTS = 1200
         first, second = self.create(), self.create()
         self.assertEqual(self.request('POST', '/api/jobs', self.body())[0], 400)
-        pending = self.stored(first);pending['status'] = 'painting';server.update_job(pending)
+        pending = self.stored(first);pending['status'] = 'painting_identity';server.update_job(pending)
         server.recover_jobs()
         self.assertEqual(self.stored(first)['status'], 'uncertain')
         self.assertEqual(self.request('POST', '/api/jobs', self.body())[0], 400)
@@ -210,8 +222,9 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(status, 200)
         next_job = self.run_job(job)
         request = server.GENERATOR.generate.call_args.args[0]
-        self.assertEqual(len(request['referenced_image_paths']), 7)
+        self.assertEqual(len(request['referenced_image_paths']), 6)
         self.assertNotIn('art-', request['referenced_image_paths'][0])
+        self.assertTrue(request['referenced_image_paths'][0].endswith('identity-study.png'))
         self.assertIn('patch locations', request['prompt'])
         self.assertIn('tan eyebrows', request['prompt'])
         self.assertEqual(self.request('POST', '/api/orders', order)[1], saved)
@@ -226,7 +239,7 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(job['completed_batches'], 0)
         self.assertEqual(server.public_job(job)['candidates'], [])
         self.assertEqual(self.request('GET', job['candidates'][0]['url'])[0], 404)
-        self.assertEqual(server.GENERATOR.generate.call_count, 1)
+        self.assertEqual(server.GENERATOR.generate.call_count, 2)
 
     def test_invalid_dimensions_or_source_copy_are_held(self):
         server.GENERATOR.generate.return_value = (self.photo, {})

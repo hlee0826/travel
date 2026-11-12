@@ -102,15 +102,21 @@ class OpenAIImages:
         return raw, {'provider': 'openai', 'model': self.model, 'request_id': request_id,
                      'usage': result.get('usage'), 'quality': 'high', 'size': payload['size'],
                      'estimated_cost_usd': estimated_cost(self.model, result.get('usage')),
-                     'reference_processing': 'curated-garden-references-v1'}
+                     'reference_processing': inputs.get('stage', 'curated-references')}
 
 
 PHOTO_FIELDS = {'usable': 'boolean', 'pet_count': 'integer', 'species': 'string',
                 'face_visible': 'boolean', 'details_clear': 'boolean',
                 'identity': 'string', 'unseen_features': 'string', 'reason': 'string'}
+IDENTITY_FIELDS = {key: 'boolean' for key in ('likeness', 'markings', 'pose_fidelity',
+    'crop_fidelity', 'no_invented_anatomy', 'painted_pet', 'matte_pigment',
+    'no_photographic_shine', 'hanji_integration', 'undecorated')}
+IDENTITY_FIELDS.update({'reason': 'string'})
 ART_FIELDS = {key: 'boolean' for key in ('likeness', 'markings', 'anatomy', 'pose_fidelity',
-    'painted', 'fresh_scene', 'garden', 'motif_coherence', 'identity_dominance',
-    'safe_margins', 'no_text')}
+    'fresh_scene', 'garden', 'motif_coherence', 'identity_dominance', 'material_unity',
+    'pet_is_painted', 'no_photographic_shine', 'shared_edge_language', 'shared_light_logic',
+    'pet_scale_balance', 'motif_scale_balance', 'quiet_space_distribution',
+    'visual_path_returns_to_pet', 'safe_margins', 'wall_art_harmony', 'no_text')}
 ART_FIELDS.update({'reason': 'string'})
 
 
@@ -148,17 +154,24 @@ class OpenAIReview:
     def photo(self, source, session):
         return self.analyze([source], '''Check this photo for a single cat or dog portrait. usable is true only for exactly one identifiable cat or dog with a visible face and sufficiently clear features. Reject multiple animals, non-pets, illustrations, severe blur, or a hidden face. A partial body is fine if the face and identifying features are clear. Describe observable identity: ear silhouette, muzzle proportions, eye color only if visible, age cues, coat colors and distinctive patch positions. Distinguish the animal's anatomical left/right from image left/right. Do not guess breed or unseen features. List hidden features separately. reason is a short, kind customer-facing explanation if a better photo is needed; otherwise a short assessment.''', PHOTO_FIELDS, session)
 
+    def identity_study(self, source, study, identity, session):
+        return self.analyze([source, study], f'''Image 1 is the customer photograph and image 2 is a newly generated undecorated Korean minhwa identity study. Identity observations: {identity}
+
+Assess each criterion independently. likeness: unmistakably the same individual pet, including face geometry, ears, muzzle, eyes, age cues, and expression; markings: observable coat colors and patch positions match without invented hidden traits; pose_fidelity: visible posture, head angle, gaze, and characteristic gesture match image 1; crop_fidelity: the study preserves the photographed crop rather than inventing a full body; no_invented_anatomy: no unsupported limbs, torso, paws, tail, or markings were fabricated; painted_pet: the entire pet is visibly reconstructed with tapered brushwork and pigment shapes rather than retained photographic texture; matte_pigment: highlights and volume are restrained, diffuse, and embedded in matte pigment; no_photographic_shine: no glossy coat, specular hair, lens blur, studio lighting, or photoreal microtexture remains; hanji_integration: pet edges, pigment absorption, and warm paper belong to one painted surface without a hard cutout; undecorated: only the pet and plain hanji appear, with no garden, motifs, props, text, border, or frame.
+
+False if uncertain. Give concrete issues. Every criterion must pass before the customer may approve this identity lock.''', IDENTITY_FIELDS, session)
+
     def artwork(self, source, artwork, anchors, style, identity, session):
         try:
             garden = GARDENS[style]
         except KeyError:
             raise ValueError('Unknown garden for artwork review.') from None
         last_reference = len(anchors) + 2
-        return self.analyze([source, artwork, *anchors], f'''Image 1 is the customer identity and pose photo, image 2 is a newly generated painting, and images 3-{last_reference} are art references only, never identity references. Compare image 2 carefully with image 1 and use the remaining images only to assess Korean minhwa material, garden composition, palette, and spatial language.
+        return self.analyze([source, artwork, *anchors], f'''Image 1 is the customer identity and pose photo, image 2 is a newly generated whole-canvas painting made from an approved painted identity study, and images 3-{last_reference} are art references only, never identity references. Compare image 2 carefully with image 1 and use the remaining images only to assess Korean minhwa material, garden composition, palette, and spatial language.
 Identity observations: {identity}
-Selected garden: {garden['label']} / {garden['korean']}.
+Selected garden: {garden['label']}.
 Required garden evidence: {garden['review']}.
 
-Assess each criterion separately. likeness: unmistakably the same individual pet, including face geometry, ears, muzzle, eyes and age cues; markings: observable coat colors and patch locations match image 1 without borrowing a reference animal or inventing hidden traits; anatomy: coherent eyes, muzzle, limbs, paws and tail; pose_fidelity: preserves image 1's visible posture, head angle, gaze and crop rather than imitating an art reference or forcing interaction with a motif; painted: pet and garden share matte layered pigment, restrained barim and fine ink contours, with no photographic cutout or texture-filtered photo; fresh_scene: a wholly new painted garden rather than the source room or a copied reference; garden: the selected garden's required motifs are clearly present with calm open hanji; motif_coherence: no unrelated motif family, motifs are limited and culturally coherent, and no forced pet-to-fauna sightline is required; identity_dominance: the pet is the first focal point and motifs remain subordinate in scale, contrast, detail and placement; safe_margins: the recognizable silhouette and all intentionally visible ears, paws and tail are not accidentally clipped or obscured; no_text: no letters, signature, seal, watermark, promotional border or frame.
+Assess each criterion separately. likeness: unmistakably the same individual pet, including face geometry, ears, muzzle, eyes and age cues; markings: observable coat colors and patch locations match image 1 without borrowing a reference animal or inventing hidden traits; anatomy: coherent eyes, muzzle, limbs, paws and tail without invented hidden body parts; pose_fidelity: preserves image 1's visible posture, head angle, gaze and crop rather than imitating an art reference; fresh_scene: a wholly new painted garden rather than the source room, a copied reference, or layered reuse of a study; garden: the selected garden's required motifs are clearly present with calm open hanji; motif_coherence: no unrelated motif family and no forced pet-to-fauna sightline; identity_dominance: the pet is the first focal point; material_unity: pet, ground, paper, and motifs share pigment absorption, contour character, barim softness, palette logic, and surface grain; pet_is_painted: the pet is formed with grouped brushwork and pigment shapes, not photographic fur or a texture-filtered photo; no_photographic_shine: no glossy coat, specular individual hairs, photographic microtexture, lens blur, or studio lighting; shared_edge_language: pet and motifs use compatible tapered, organic contours without a hard cutout edge; shared_light_logic: all elements share diffuse paper-embedded light with no photographic foreground lighting; pet_scale_balance: the pet occupies about 60-68% height for a bust or 52-60% for a visible full body and feels intentionally placed; motif_scale_balance: main structure is about 15-24%, support about 6-10%, each small fauna about 3-5%, all subordinate; quiet_space_distribution: about 28-35% calm paper surrounds rather than isolates or crowds the pet; visual_path_returns_to_pet: the eye moves from the face through motifs and returns to the pet instead of leaving the frame; safe_margins: the recognizable silhouette and visible ears, paws and tail are not accidentally clipped or obscured; wall_art_harmony: at thumbnail and full view the work feels deliberately composed, balanced, materially coherent, and suitable as one finished wall artwork rather than a checklist collage; no_text: no letters, signature, seal, watermark, promotional border or frame.
 
 False if uncertain. Give concrete issues and a concise explanation. All criteria must pass for automatic release to the customer. The customer still gives final likeness approval.''', ART_FIELDS, session)

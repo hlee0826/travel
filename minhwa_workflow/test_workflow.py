@@ -16,15 +16,15 @@ class WorkflowTests(unittest.TestCase):
         for style in workflow.GARDENS:
             inputs = workflow.generation_inputs(source, style)
             self.assertEqual(inputs['referenced_image_paths'], [str(source.resolve()), *map(str, workflow.GARDEN_ANCHORS[style])])
-            self.assertEqual(len(inputs['referenced_image_paths']), 7)
-            self.assertEqual(len(inputs['reference_files']), 6)
+            self.assertEqual(len(inputs['referenced_image_paths']), 6)
+            self.assertEqual(len(inputs['reference_files']), 5)
             self.assertEqual(inputs['reference_roles'], list(workflow.REFERENCE_ROLES))
             self.assertIn(workflow.GARDENS[style]['label'], inputs['prompt'])
-            self.assertIn('CUSTOMER IDENTITY AND POSE AUTHORITY', inputs['prompt'])
+            self.assertIn('APPROVED PAINTED IDENTITY STUDY', inputs['prompt'])
             self.assertIn('ART REFERENCES only', inputs['prompt'])
-            self.assertIn('Preserve the source head angle and gaze', inputs['prompt'])
+            self.assertIn('WHOLE-CANVAS SYNTHESIS', inputs['prompt'])
             self.assertIn('Do not force the pet to look at', inputs['prompt'])
-            self.assertIn('Images 2-3 are direct-to-viewer calibration plates', inputs['prompt'])
+            self.assertIn('60-68% of canvas height', inputs['prompt'])
             self.assertFalse(inputs['transparent_background'])
             for path in inputs['referenced_image_paths']:
                 self.assertTrue(Path(path).is_absolute())
@@ -34,17 +34,24 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn('exactly one Korean magpie', workflow.generation_inputs(source, 'pine')['prompt'])
         self.assertIn('Include no butterflies, peonies, or lotus', workflow.generation_inputs(source, 'pine')['prompt'])
 
-    def test_each_garden_balances_direct_and_interaction_poses(self):
-        expected_direct_anchors = {
-            'peony': ('cat-16-peony-butterflies.jpg', 'dog-21-peony-butterflies.jpg'),
-            'lotus': ('cat-17-lotus-butterflies.jpg', 'dog-22-lotus-butterflies.jpg'),
-            'pine': ('cat-18-pine-magpie.jpg', 'dog-23-pine-magpie.jpg'),
-        }
-        for garden, direct_names in expected_direct_anchors.items():
+    def test_each_garden_has_five_role_specific_references(self):
+        expected_first_anchor = {'peony':'cat-16-peony-butterflies.jpg',
+                                 'lotus':'cat-17-lotus-butterflies.jpg',
+                                 'pine':'cat-18-pine-magpie.jpg'}
+        for garden, first_name in expected_first_anchor.items():
             names = tuple(path.name for path in workflow.GARDEN_ANCHORS[garden])
-            self.assertEqual(names[:2], direct_names)
+            self.assertEqual(names[0], first_name)
+            self.assertEqual(len(names), 5)
             self.assertEqual(sum(name.startswith('cat-') for name in names), 3)
-            self.assertEqual(sum(name.startswith('dog-') for name in names), 3)
+            self.assertEqual(sum(name.startswith('dog-') for name in names), 2)
+
+    def test_identity_stage_uses_only_customer_photo(self):
+        source = workflow.GARDEN_ANCHORS['peony'][0]
+        inputs = workflow.identity_inputs(source, 'upright ears')
+        self.assertEqual(inputs['referenced_image_paths'], [str(source.resolve())])
+        self.assertEqual(inputs['stage'], 'identity-study')
+        self.assertIn('undecorated', inputs['prompt'])
+        self.assertIn('Do not invent hidden', inputs['prompt'])
 
     def test_invalid_style_or_missing_image_fails(self):
         with self.assertRaises(ValueError):
@@ -62,12 +69,12 @@ class WorkflowTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / 'run' / 'inputs.json'
             command = [sys.executable, str(Path(workflow.__file__).resolve()),
-                       '--source', str(workflow.GARDEN_ANCHORS['peony'][0]), '--style', 'pine',
+                       '--source', str(workflow.GARDEN_ANCHORS['peony'][0]), '--style', 'pine', '--stage', 'integrated',
                        '--output', str(output)]
             result = subprocess.run(command, cwd=temp, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             before = output.read_bytes()
-            self.assertEqual(len(json.loads(before)['referenced_image_paths']), 7)
+            self.assertEqual(len(json.loads(before)['referenced_image_paths']), 6)
             duplicate = subprocess.run(command, cwd=temp, capture_output=True, text=True)
             self.assertNotEqual(duplicate.returncode, 0)
             self.assertEqual(output.read_bytes(), before)

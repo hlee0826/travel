@@ -68,14 +68,14 @@ def reserve(conn, doc):
         count(*) FILTER(WHERE j.source_hash=%s) AS photo_count
         FROM minhwa.attempts a JOIN minhwa.jobs j ON j.id=a.job_id WHERE a.created > now()-interval '24 hours' ''',
         (doc['session'], doc['source_hash'])).fetchone()
-    if totals['budget'] + 300 > int(os.environ.get('MINHWA_DAILY_BUDGET_CENTS', '30000')):
+    if totals['budget'] + 600 > int(os.environ.get('MINHWA_DAILY_BUDGET_CENTS', '30000')):
         raise ValueError('The studio has reached its testing allowance. No painting was started.')
     exempt = conn.execute('SELECT 1 FROM minhwa.login_limits WHERE key=%s AND resets>now()',
                           ('allowance:' + doc['session'],)).fetchone()
     if not exempt and (totals['session_count'] >= 6 or totals['photo_count'] >= 3):
         raise ValueError('The daily allowance for this session or photo has been reached.')
     attempt_id = secrets.token_hex(12)
-    conn.execute('INSERT INTO minhwa.attempts(id,job_id,reserved_cents) VALUES(%s,%s,300)', (attempt_id,doc['id']))
+    conn.execute('INSERT INTO minhwa.attempts(id,job_id,reserved_cents) VALUES(%s,%s,600)', (attempt_id,doc['id']))
     doc.update(status='queued', error=None, attempt_id=attempt_id, updated=time.time())
     db.save_job(conn, doc)
     return doc
@@ -153,7 +153,9 @@ def retry(session, job_id, body):
             return doc
         if len(doc.get('retry_keys', [])) >= 64:
             raise ValueError('Too many retry requests for this portrait. Please refresh Your pieces.')
-        if doc['status'] in ('queued','checking_photo','painting','checking_artwork','rendering','awaiting_review'):
+        if doc['status'] in ('queued','checking_photo','painting_identity','checking_identity',
+                             'awaiting_identity_approval','painting_integrated','checking_artwork',
+                             'rendering','awaiting_review'):
             doc.setdefault('retry_keys', []).append(retry_key)
             db.save_job(conn, doc)
             return doc
@@ -164,8 +166,31 @@ def retry(session, job_id, body):
         return reserve(conn, doc)
 
 
+def approve_identity(session, job_id, body):
+    key = identifier(body.get('key'))
+    if type(body.get('approved')) is not bool:
+        raise ValueError('Choose whether this identity study looks like your pet.')
+    with db.connect() as conn:
+        doc = db.job(conn, identifier(job_id), session, lock=True)['document']
+        if key in doc.get('identity_approval_keys', []):
+            return doc
+        if doc.get('identity_study_status') != 'pending' or doc['status'] != 'awaiting_identity_approval':
+            raise ValueError('This identity study is not waiting for approval.')
+        doc.setdefault('identity_approval_keys', []).append(key)
+        if body['approved']:
+            doc.update(identity_study_status='approved', identity_approved_at=time.time(),
+                       status='queued', error=None)
+            conn.execute("UPDATE minhwa.attempts SET status='queued',dispatch_at=NULL WHERE id=%s", (doc['attempt_id'],))
+        else:
+            doc.update(identity_study_status='rejected', status='rejected',
+                       error='This identity study was not approved. Request another interpretation.')
+            conn.execute("UPDATE minhwa.attempts SET status='rejected' WHERE id=%s", (doc['attempt_id'],))
+        db.save_job(conn, doc)
+        return doc
+
+
 def public_job(doc, conn):
-    keys = ('id','name','style','demo','created','status','source','source_dimensions','completed_batches','error','product_preference','size_preference')
+    keys = ('id','name','style','demo','created','status','source','source_dimensions','completed_batches','error','product_preference','size_preference','identity_study','identity_study_status')
     result = {k:doc.get(k) for k in keys}
     result['candidates'] = [{k:c[k] for k in ('id','url','dimensions','artifacts_version') if k in c}
                             for c in doc['candidates'] if c.get('review_status','approved') == 'approved']

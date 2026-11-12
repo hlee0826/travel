@@ -42,7 +42,9 @@
 
 - Selected garden:
 - Garden symbolism:
-- Curated reference files (six):
+- Curated final-synthesis reference files (five):
+- Approved identity-study file:
+- Identity-study SHA-256:
 
 ### Anchor motif
 
@@ -83,6 +85,11 @@
 - Inscription position:
 - Grounding element:
 - Explicit exclusions:
+- Whole-canvas synthesis confirmed (no layer compositing):
+- Pet scale target (bust 60–68%; full body 52–60%):
+- Main motif frame-share target (15–24%):
+- Quiet-space target (28–35%):
+- Returning visual path:
 
 ## Portrait-first confirmation
 

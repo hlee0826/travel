@@ -23,7 +23,7 @@ references/
 commissions/
 minhwa_workflow/reference_library_v2/images/
 
-# Ship only the 18 active runtime references; keep superseded copies local.
+# Ship only the 18 curated garden references; v7 selects 15 at runtime (five per garden).
 minhwa_workflow/garden-anchors/*
 !minhwa_workflow/garden-anchors/cat-16-peony-butterflies.jpg
 !minhwa_workflow/garden-anchors/dog-21-peony-butterflies.jpg
