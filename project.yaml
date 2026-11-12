@@ -94,8 +94,8 @@ customer_gardens:
 
 image_generation_workflow:
   path: minhwa_workflow
-  version: minhwa-gardens-v7
-  stages: [identity_study, customer_identity_approval, integrated_whole_canvas, final_qa]
+  version: minhwa-gardens-v8
+  stages: [private_identity_study, internal_identity_gate, integrated_whole_canvas, final_qa]
   identity_generation_reference_count: 1
   integrated_generation_reference_count: 6
   layer_compositing: false

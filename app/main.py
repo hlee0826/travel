@@ -156,15 +156,6 @@ async def retry(job_id: str, request: Request):
         return service.public_job(doc, conn)
 
 
-@app.post('/api/jobs/{job_id}/identity-approval')
-async def identity_approval(job_id: str, request: Request):
-    doc = await asyncio.to_thread(service.approve_identity, request.state.session, job_id, request.state.data)
-    if doc['status'] == 'queued':
-        await dispatch()
-    with db.connect() as conn:
-        return service.public_job(doc, conn)
-
-
 @app.post('/api/orders')
 def order(request: Request):
     return service.order(request.state.session, request.state.data)
@@ -211,8 +202,6 @@ def media(job_id: str, filename: str, request: Request):
         doc = db.job(conn, service.identifier(job_id), request.state.session)['document']
     if filename == 'source.png' and not doc['demo']:
         key = job_id+'/source.png'
-    elif filename == 'identity-study.png' and doc.get('identity_study_status') in ('pending','approved'):
-        key = job_id+'/identity-study.png'
     else:
         candidate = next((c for c in doc['candidates'] if c.get('review_status')=='approved' and filename==f'art-{c["id"]}.png'),None)
         if not candidate:

@@ -140,7 +140,7 @@ def job_path(job_id):
 
 def prepare_generation(job):
     folder = job_path(job['id'])
-    identity_phase = job.get('identity_study_status') != 'approved'
+    identity_phase = job.get('identity_study_status') != 'approved_internal'
     inputs = (workflow.identity_inputs(folder / 'source.png') if identity_phase else
               workflow.generation_inputs(folder / 'identity-study.png', job['style']))
     job['workflow_version'] = workflow.WORKFLOW_VERSION
@@ -148,7 +148,7 @@ def prepare_generation(job):
     save_json(folder / 'generation-inputs.json', inputs)
     phase = 'undecorated identity study' if identity_phase else 'integrated garden portrait'
     count = len(inputs['referenced_image_paths'])
-    followup = ('The website will show the identity study for customer approval before any garden is generated.'
+    followup = ('Keep the identity study private; after the internal gate, prepare the integrated garden request.'
                 if identity_phase else 'The website will detect the completed integrated artwork.')
     (folder / 'request.txt').write_text(f'''Generate the pending {phase} for {job['id']} in this local workspace. Art direction: {workflow.WORKFLOW_VERSION}.
 Read {folder / 'generation-inputs.json'} and inspect every image listed in referenced_image_paths.
@@ -161,38 +161,19 @@ Save the outputs in this workspace, then run:
 
 
 def public_job(job):
-    request = None if job['demo'] or job.get('generation_provider') == 'openai' else (job_path(job['id']) / 'request.txt').read_text()
-    visible = {k: v for k, v in job.items() if k not in ('session', 'attempts', 'submit_key', 'source_hash', 'identity')}
+    # Manual handoff instructions are studio-only; never expose internal stage details to customers.
+    request = None
+    visible = {k: v for k, v in job.items() if k not in ('session', 'attempts', 'submit_key', 'source_hash', 'identity',
+                                                          'identity_study', 'identity_study_status', 'identity_study_dimensions',
+                                                          'identity_study_hash', 'identity_approved_at')}
+    if visible['status'] in ('awaiting_identity_artwork', 'awaiting_artwork', 'painting_identity',
+                             'checking_identity', 'painting_integrated'):
+        visible['status'] = 'painting'
     visible['candidates'] = [{k: v for k, v in c.items() if k not in ('usage', 'request_id', 'reference_hashes', 'quality_report')}
         for c in job['candidates'] if c.get('review_status', 'approved') == 'approved']
     visible['can_retry'] = (job['status'] in ('ready', 'rejected', 'failed') and job['completed_batches'] < 2
                             and len(job.get('attempts', [])) < 3)
     return visible | {'request': request}
-
-
-def approve_identity(job_id, approved):
-    with LOCK:
-        job = read_json(job_path(job_id) / 'job.json')
-        if job.get('identity_study_status') != 'pending' or job['status'] != 'awaiting_identity_approval':
-            raise ValueError('This identity study is not waiting for approval.')
-        if approved:
-            job.update(identity_study_status='approved', identity_approved_at=time.time(), error=None)
-            if job.get('generation_provider') == 'openai':
-                job['attempts'][-1]['status'] = 'queued'
-                job['status'] = 'queued'
-                save_json(job_path(job_id) / 'job.json', job)
-                WAKE.set()
-            else:
-                prepare_generation(job)
-                job['status'] = 'awaiting_artwork'
-                save_json(job_path(job_id) / 'job.json', job)
-        else:
-            job.update(identity_study_status='rejected', status='rejected',
-                       error='This identity study was not approved. Request another interpretation.')
-            if job.get('attempts'):
-                job['attempts'][-1]['status'] = 'rejected'
-            save_json(job_path(job_id) / 'job.json', job)
-        return job
 
 
 def complete_artwork(job_id, images, metadata=None):
@@ -206,10 +187,10 @@ def complete_artwork(job_id, images, metadata=None):
                 raise ValueError('Attach one identity-study candidate.')
             raw, dimensions = image_bytes(images[0])
             save_bytes(folder / 'identity-study.png', raw)
-            job.update(status='awaiting_identity_approval', error=None,
-                       identity_study='/media/' + job_id + '/identity-study.png',
-                       identity_study_status='pending', identity_study_dimensions=list(dimensions),
+            job.update(status='awaiting_artwork', error=None,
+                       identity_study_status='approved_internal', identity_study_dimensions=list(dimensions),
                        identity_study_hash=hashlib.sha256(raw).hexdigest())
+            prepare_generation(job)
             save_json(folder / 'job.json', job)
             return job
         if not 1 <= len(images) <= 2:
@@ -286,7 +267,7 @@ def generate_artwork(job_id, generator, reviewer=None):
     workspace = folder / 'attempts' / attempt['id']
     workspace.mkdir(parents=True, exist_ok=True)
     try:
-        if job.get('identity_study_status') != 'approved':
+        if job.get('identity_study_status') != 'approved_internal':
             photo, photo_meta = provider_call(job, 'checking_photo', lambda: reviewer.photo(folder / 'source.png', job['session']))
             save_json(workspace / 'photo-review.json', {'verdict': photo, **photo_meta})
             if not (photo['usable'] and photo['pet_count'] == 1 and photo['species'].lower() in ('cat', 'dog')
@@ -315,13 +296,12 @@ def generate_artwork(job_id, generator, reviewer=None):
                                error='The identity study did not pass likeness and material checks. Request another interpretation.')
                     return
                 save_bytes(folder / 'identity-study.png', raw)
-                attempt['status'] = 'awaiting_identity_approval'
-                update_job(job, status='awaiting_identity_approval', identity=identity, error=None,
-                           identity_study=f'/media/{job_id}/identity-study.png',
-                           identity_study_status='pending', identity_study_dimensions=list(dimensions),
+                attempt['status'] = 'checking_identity'
+                update_job(job, identity=identity, error=None,
+                           identity_study_status='approved_internal', identity_study_dimensions=list(dimensions),
                            identity_study_hash=hashlib.sha256(raw).hexdigest())
-            return
-        identity = job['identity']
+        else:
+            identity = job['identity']
         inputs = workflow.generation_inputs(folder / 'identity-study.png', job['style'], identity, FEEDBACK.get(job.get('feedback'), ''))
         save_json(workspace / 'inputs.json', inputs)
         raw, metadata = provider_call(job, 'painting_integrated', lambda: generator.generate(inputs, job['session']))
@@ -500,12 +480,10 @@ class Handler(BaseHTTPRequestHandler):
                 if match:
                     session, _ = self.session()
                     return self.send(200, public_job(self.owned_job(match[1], session)))
-                match = re.fullmatch(r'/media/([a-f0-9]{24})/(source\.png|identity-study\.png|art-[a-f0-9]+\.png)', path)
+                match = re.fullmatch(r'/media/([a-f0-9]{24})/(source\.png|art-[a-f0-9]+\.png)', path)
                 if match:
                     session, _ = self.session()
                     job = self.owned_job(match[1], session)
-                    if match[2] == 'identity-study.png' and job.get('identity_study_status') not in ('pending','approved'):
-                        raise FileNotFoundError()
                     if match[2].startswith('art-') and not any(c['url'].endswith('/' + match[2]) and c.get('review_status', 'approved') == 'approved' for c in job['candidates']):
                         raise FileNotFoundError()
                     candidate = next((c for c in job['candidates'] if c['url'].endswith('/' + match[2])), None)
@@ -615,7 +593,7 @@ class Handler(BaseHTTPRequestHandler):
                         raise ValueError('The included portrait batches have been used.')
                     if job.get('generation_provider') == 'openai' and not GENERATOR:
                         raise ValueError('Enable the OpenAI provider before retrying this portrait.')
-                    if job['status'] in ACTIVE | {'awaiting_identity_artwork', 'awaiting_identity_approval', 'awaiting_artwork', 'awaiting_review'}:
+                    if job['status'] in ACTIVE | {'awaiting_identity_artwork', 'awaiting_artwork', 'awaiting_review'}:
                         return self.send(200, public_job(job))
                     if job['status'] in ('uncertain', 'needs_photo'):
                         raise ValueError('This attempt needs a studio review or a different photo before retrying.')
@@ -627,16 +605,10 @@ class Handler(BaseHTTPRequestHandler):
                     if job.get('generation_provider') == 'openai':
                         start_generation(job)
                     else:
-                        job['status'], job['error'] = ('awaiting_artwork' if job.get('identity_study_status') == 'approved'
+                        job['status'], job['error'] = ('awaiting_artwork' if job.get('identity_study_status') == 'approved_internal'
                                                       else 'awaiting_identity_artwork'), None
                         save_json(job_path(job['id']) / 'job.json', job)
                     return self.send(200, public_job(job))
-                match = re.fullmatch(r'/api/jobs/([a-f0-9]{24})/identity-approval', path)
-                if match:
-                    job = self.owned_job(match[1], session)
-                    if type(body.get('approved')) is not bool:
-                        raise ValueError('Choose whether this identity study looks like your pet.')
-                    return self.send(200, public_job(approve_identity(job['id'], body['approved'])))
                 if path == '/api/orders':
                     job = self.owned_job(str(body.get('job_id', '')), session)
                     candidate = next((c for c in job['candidates'] if c['id'] == body.get('candidate_id')), None)

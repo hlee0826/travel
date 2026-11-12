@@ -65,10 +65,10 @@ generation:
   model:
   model_version:
   seed:
-  workflow_version: minhwa-gardens-v7
+  workflow_version: minhwa-gardens-v8
   identity_study_file:
   identity_study_sha256:
-  identity_study_approved: false
+  identity_study_approved_internal: false
   whole_canvas_synthesis: true
   layer_compositing: false
   curated_reference_files: []

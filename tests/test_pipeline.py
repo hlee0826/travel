@@ -75,11 +75,6 @@ class PipelineTests(unittest.TestCase):
 
     def run_job(self, job):
         server.generate_artwork(job['id'], server.GENERATOR, server.REVIEWER)
-        current = self.stored(job)
-        if current['status'] == 'awaiting_identity_approval':
-            status, current, _ = self.request('POST', f"/api/jobs/{job['id']}/identity-approval", {'approved': True})
-            self.assertEqual(status, 200, current)
-            server.generate_artwork(job['id'], server.GENERATOR, server.REVIEWER)
         return self.stored(job)
 
     def test_product_preferences_survive_reload_and_invalid_sizes_fail(self):
@@ -114,10 +109,6 @@ class PipelineTests(unittest.TestCase):
         worker.start()
         try:
             deadline = time.time() + 5
-            while time.time() < deadline and any(self.stored(j)['status'] != 'awaiting_identity_approval' for j in (first, second)):
-                time.sleep(.02)
-            for job in (first, second):
-                self.assertEqual(self.request('POST', f"/api/jobs/{job['id']}/identity-approval", {'approved': True})[0], 200)
             while time.time() < deadline and self.stored(second)['status'] != 'ready':
                 time.sleep(.02)
             self.assertEqual(self.stored(first)['status'], 'ready')
@@ -125,8 +116,9 @@ class PipelineTests(unittest.TestCase):
             calls = server.GENERATOR.generate.call_args_list
             self.assertEqual(len(calls), 4)
             self.assertIn(first['id'], calls[0].args[0]['referenced_image_paths'][0])
-            self.assertIn(second['id'], calls[1].args[0]['referenced_image_paths'][0])
-            self.assertTrue(calls[2].args[0]['referenced_image_paths'][0].endswith('identity-study.png'))
+            self.assertTrue(calls[1].args[0]['referenced_image_paths'][0].endswith('identity-study.png'))
+            self.assertIn(second['id'], calls[2].args[0]['referenced_image_paths'][0])
+            self.assertTrue(calls[3].args[0]['referenced_image_paths'][0].endswith('identity-study.png'))
         finally:
             server.STOP.set(); server.WAKE.set(); worker.join(5)
             self.assertFalse(worker.is_alive())

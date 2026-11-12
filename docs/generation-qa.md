@@ -4,18 +4,21 @@ The local upload → generated painting → automated review/release (studio rev
 
 ## November 11 three-garden workflow update
 
-`minhwa-gardens-v7` adds Peony & Butterfly, Lotus & Butterfly, and Pine &
+`minhwa-gardens-v8` adds Peony & Butterfly, Lotus & Butterfly, and Pine &
 Magpie as stable customer choices. Each new portrait first attaches only the
-customer photo to produce a customer-approved undecorated identity study. A
-second call attaches that study plus five curated references from only the
-selected garden. The photograph governs individual identity and photographed
-pose; the study carries the approved painted identity into final synthesis; the
+customer photo to produce a private undecorated identity study. Every internal
+identity and material criterion must pass before a second call automatically
+attaches that study plus five curated references from only the selected garden.
+The study is never exposed to the customer. The photograph governs individual
+identity and photographed pose; the study carries the internally approved painted identity into final synthesis; the
 five references have separate material, motif, palette, composition, and
 spatial roles. The complete final canvas is repainted in one pass rather than
 assembled from layers.
 
 The pine recipe requires one weathered pine structure and exactly one magpie,
-with no butterfly, peony, or lotus. Review now explicitly checks pose fidelity,
+with no butterfly, peony, or lotus. It limits a bust/reclining/close three-quarter
+pet to 46–54% canvas height or a full body to 42–50%, while the mature pine must
+read at least 1.35 times the pet height and span 55–75% canvas width. Review now explicitly checks pose fidelity,
 motif coherence, material unity, scale, quiet space, returning visual path, and
 overall wall-art harmony. Local workflow tests and the available
 application suite pass; database-dependent hosted tests remain skipped without

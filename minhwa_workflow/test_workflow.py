@@ -24,7 +24,7 @@ class WorkflowTests(unittest.TestCase):
             self.assertIn('ART REFERENCES only', inputs['prompt'])
             self.assertIn('WHOLE-CANVAS SYNTHESIS', inputs['prompt'])
             self.assertIn('Do not force the pet to look at', inputs['prompt'])
-            self.assertIn('60-68% of canvas height', inputs['prompt'])
+            self.assertIn(workflow.GARDENS[style]['composition'], inputs['prompt'])
             self.assertFalse(inputs['transparent_background'])
             for path in inputs['referenced_image_paths']:
                 self.assertTrue(Path(path).is_absolute())
@@ -33,6 +33,10 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn('shallow water rhythm', workflow.generation_inputs(source, 'lotus')['prompt'])
         self.assertIn('exactly one Korean magpie', workflow.generation_inputs(source, 'pine')['prompt'])
         self.assertIn('Include no butterflies, peonies, or lotus', workflow.generation_inputs(source, 'pine')['prompt'])
+        pine = workflow.generation_inputs(source, 'pine')['prompt']
+        self.assertIn('46-54% of canvas height', pine)
+        self.assertIn('1.35 times the pet height', pine)
+        self.assertIn('55-75% of the canvas width', pine)
 
     def test_each_garden_has_five_role_specific_references(self):
         expected_first_anchor = {'peony':'cat-16-peony-butterflies.jpg',

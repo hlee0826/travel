@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 
-WORKFLOW_VERSION = 'minhwa-gardens-v7'
+WORKFLOW_VERSION = 'minhwa-gardens-v8'
 ANCHOR_ROOT = Path(__file__).resolve().parent / 'garden-anchors'
 REFERENCE_ROLES = (
     'overall garden composition and pet-to-motif scale',
@@ -28,6 +28,9 @@ GARDENS = {
                    'form a floral wreath or crown around the pet.'),
         'review': ('recognizable peonies and one to three restrained butterflies; no floral '
                    'wreath, and no motif obscuring the pet'),
+        'composition': ('For a bust or close three-quarter crop, keep the pet at 58-66% of canvas '
+                        'height; for a visible full body, 50-58%. The peony structure may occupy '
+                        '15-24% of the picture while remaining subordinate to the face.'),
     },
     'lotus': {
         'label': 'Lotus & Butterfly Garden',
@@ -42,6 +45,9 @@ GARDENS = {
                    'Keep open hanji around the pet instead of filling the scene as a dense pond.'),
         'review': ('recognizable lotus blossoms and leaves, a shallow water rhythm, and one to '
                    'three restrained butterflies; no dense pond scenery'),
+        'composition': ('For a bust or close three-quarter crop, keep the pet at 56-64% of canvas '
+                        'height; for a visible full body, 50-58%. Lotus leaves and blossoms may '
+                        'occupy 16-25% of the picture while preserving calm open paper.'),
     },
     'pine': {
         'label': 'Pine & Magpie Garden',
@@ -53,9 +59,19 @@ GARDENS = {
         ),
         'recipe': ('Use one weathered, crooked pine structure and exactly one Korean magpie. '
                    'A single low fantastical rock may support the composition. Include no '
-                   'butterflies, peonies, or lotus.'),
+                   'butterflies, peonies, or lotus. Treat the pine as a mature landscape anchor, '
+                   'not a decorative branch behind an oversized pet.'),
         'review': ('one weathered pine structure and exactly one magpie, with at most one low '
                    'rock; no butterflies, peonies, or lotus'),
+        'composition': ('PINE-SPECIFIC SCALE: make the pet visibly smaller than the mature tree. '
+                        'For a bust, reclining, or close three-quarter crop, the pet bounding box '
+                        'must occupy only 46-54% of canvas height and no more than 44% of canvas '
+                        'width; for a visible full body, 42-50% of canvas height. The pine trunk '
+                        'and canopy together must read at least 1.35 times the pet height, span '
+                        '55-75% of the canvas width, and form 28-38% of the total visual mass. '
+                        'Keep the pet in the lower middle with open paper around its head. Minhwa '
+                        'may use symbolic scale, but the tree must unmistakably read as the larger '
+                        'environmental structure rather than a pet-sized prop.'),
     },
 }
 GARDEN_ANCHORS = {
@@ -137,7 +153,7 @@ Selected garden: {garden['label']}. Symbolic intention: {garden['meaning']}.
 Keep every motif subordinate in scale, contrast, detail, and placement. Do not overlap the eyes, muzzle, ears, defining markings, paws, or tail. The pet must be the first focal point at thumbnail size. Reserve 28-35% calm open paper and a blank inscription area for verified post-production calligraphy.
 
 COMPOSITION CONTRACT
-Preserve image 1's approved crop. For a bust or close three-quarter crop, the pet occupies 60-68% of canvas height; for a visible full body, 52-60%. Keep 28-35% quiet paper. The main garden structure occupies 15-24%, a supporting rock or leaf mass 6-10%, and each small bird or butterfly 3-5%. Place the pet near the lower center, at most 8% off-center, with open paper around the head. Build a soft triangular or S-shaped visual path from the eyes to the nearest motif, to a quieter counterweight, and back through the chest or silhouette. No motif may create a halo, crowd the face, or pull attention out of the frame.
+Preserve image 1's approved posture, head angle, gaze, expression, markings, and visible anatomy while changing only its frame share when the selected garden requires it. {garden['composition']} Keep 28-35% quiet paper. A supporting rock or leaf mass occupies 6-10%, and each small bird or butterfly 3-5%. Place the pet near the lower center, at most 8% off-center, with open paper around the head. Build a soft triangular or S-shaped visual path from the eyes to the nearest motif, to a quieter counterweight, and back through the chest or silhouette. Judge scale relationally before adding detail: the pet, anchor motif, quiet paper, and fauna must feel intentionally proportioned as one painting. No motif may create a halo, crowd the face, or pull attention out of the frame.
 
 TRADITIONAL PAINTING LANGUAGE
 Use shallow stacked symbolic space, warm mulberry hanji, matte ink and layered mineral or plant-like pigment, restrained barim, fine organic contours, and affectionate irregularity. The face and eyes may carry the highest descriptive detail, but the pet must remain visibly painted. Avoid photographic fur, individual glossy hairs, glossy eyes, lens blur, cinematic lighting, pasted cutouts, airbrushed realism, anime, or generic watercolor clip art.

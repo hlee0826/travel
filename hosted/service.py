@@ -154,7 +154,7 @@ def retry(session, job_id, body):
         if len(doc.get('retry_keys', [])) >= 64:
             raise ValueError('Too many retry requests for this portrait. Please refresh Your pieces.')
         if doc['status'] in ('queued','checking_photo','painting_identity','checking_identity',
-                             'awaiting_identity_approval','painting_integrated','checking_artwork',
+                             'painting_integrated','checking_artwork',
                              'rendering','awaiting_review'):
             doc.setdefault('retry_keys', []).append(retry_key)
             db.save_job(conn, doc)
@@ -166,32 +166,11 @@ def retry(session, job_id, body):
         return reserve(conn, doc)
 
 
-def approve_identity(session, job_id, body):
-    key = identifier(body.get('key'))
-    if type(body.get('approved')) is not bool:
-        raise ValueError('Choose whether this identity study looks like your pet.')
-    with db.connect() as conn:
-        doc = db.job(conn, identifier(job_id), session, lock=True)['document']
-        if key in doc.get('identity_approval_keys', []):
-            return doc
-        if doc.get('identity_study_status') != 'pending' or doc['status'] != 'awaiting_identity_approval':
-            raise ValueError('This identity study is not waiting for approval.')
-        doc.setdefault('identity_approval_keys', []).append(key)
-        if body['approved']:
-            doc.update(identity_study_status='approved', identity_approved_at=time.time(),
-                       status='queued', error=None)
-            conn.execute("UPDATE minhwa.attempts SET status='queued',dispatch_at=NULL WHERE id=%s", (doc['attempt_id'],))
-        else:
-            doc.update(identity_study_status='rejected', status='rejected',
-                       error='This identity study was not approved. Request another interpretation.')
-            conn.execute("UPDATE minhwa.attempts SET status='rejected' WHERE id=%s", (doc['attempt_id'],))
-        db.save_job(conn, doc)
-        return doc
-
-
 def public_job(doc, conn):
-    keys = ('id','name','style','demo','created','status','source','source_dimensions','completed_batches','error','product_preference','size_preference','identity_study','identity_study_status')
+    keys = ('id','name','style','demo','created','status','source','source_dimensions','completed_batches','error','product_preference','size_preference')
     result = {k:doc.get(k) for k in keys}
+    if result['status'] in ('painting_identity','checking_identity','painting_integrated'):
+        result['status'] = 'painting'
     result['candidates'] = [{k:c[k] for k in ('id','url','dimensions','artifacts_version') if k in c}
                             for c in doc['candidates'] if c.get('review_status','approved') == 'approved']
     attempts = conn.execute('SELECT count(*) n FROM minhwa.attempts WHERE job_id=%s', (doc['id'],)).fetchone()['n']

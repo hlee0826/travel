@@ -83,10 +83,10 @@ Colors or motifs to avoid:
 - Inscription or pet name:
 - Intended display size or use:
 
-## Approval acknowledgement
+## Internal quality record
 
-The pet’s likeness will be approved before motifs and symbolic scenery are developed.
+The studio’s private likeness and material gate must pass before motifs and symbolic scenery are developed. Customers review only the completed garden portrait.
 
-- Customer identity-study approval:
+- Internal identity-study gate result (not customer-facing):
 - Date:
 - Notes:

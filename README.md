@@ -25,8 +25,8 @@ API mode requires `MINHWA_IMAGE_PROVIDER=openai`, `OPENAI_API_KEY`, Images Reque
 1. Upload JPEG, PNG, WebP or HEIC, up to 20 MB / 40 megapixels, at least 600 pixels on each edge. Consent is required. Files are decoded, orientation-corrected, normalized and stripped of metadata.
 2. A photo check requires one identifiable cat or dog with clear facial features. Rejected photos never reach the image endpoint.
 3. The durable queue creates a 2432 × 3040 undecorated identity study from the photo alone. Automated review checks likeness, markings, pose, crop, invented anatomy, matte pigment, photographic shine, hanji integration and absence of decoration.
-4. The customer approves that identity study before the garden stage can start.
-5. A separate image call uses the approved painted study plus five selected garden references. It repaints the full canvas from scratch—never layer-compositing the study—with explicit pet scale, motif scale, quiet-space and returning-visual-path contracts.
+4. The private study must pass every internal likeness and material criterion before the garden stage starts automatically. It is never shown to the customer.
+5. A separate image call uses the internally approved painted study plus five selected garden references. It repaints the full canvas from scratch—never layer-compositing the study—with garden-specific pet scale, motif scale, quiet-space and returning-visual-path contracts. Pine requires a visibly smaller pet and a mature tree that reads at least 1.35 times the pet height.
 6. Final automated review independently gates identity, anatomy, pose, selected-garden evidence, material unity, painted pet treatment, photographic shine, shared edges and light, pet/motif scale, quiet space, visual path, safe margins and overall wall-art harmony. Every boolean must pass before customer review.
 7. Choose digital, print or natural-oak framed print. Physical sizes are 5 × 7 inches for your desk and 12 × 16 inches for your wall. Place a clearly labeled test order; no payment or supplier is contacted.
 8. PNG/JPEG downloads use the saved approved master, including the optional name. The preview watermark is separate. A 12 × 16 sheet centers the complete 12 × 15 painting with half-inch top/bottom borders; it never crops the artwork.
@@ -50,7 +50,7 @@ Manual mode still supports `studio.py complete JOB_ID /absolute/path/artwork.png
 
 ## Art direction and saved files
 
-`minhwa_workflow/workflow.py` is the authoritative `minhwa-gardens-v7` brief. Stage 1 uses only the customer photo to make an undecorated identity study. After approval, stage 2 uses that painted study plus five curated references for the selected peony, lotus, or pine garden. Inputs are normalized/downscaled for transmission, with hashes recorded. Missing or changed references block generation.
+`minhwa_workflow/workflow.py` is the authoritative `minhwa-gardens-v8` brief. Stage 1 uses only the customer photo to make a private undecorated identity study. After the internal gate passes, stage 2 automatically uses that painted study plus five curated references for the selected peony, lotus, or pine garden. Inputs are normalized/downscaled for transmission, with hashes recorded. Missing or changed references block generation.
 
 The pet and garden must share a traditional painted language, but motifs are composed around the photographed posture rather than forcing a butterfly or magpie sightline. No source-room background, photographic cutout, copied reference identity, unrelated motif accumulation, text, seal or signature. Optional names are rendered once into the master with bundled OFL-licensed Noto Serif KR. Likeness is reviewed, not mathematically guaranteed.
 

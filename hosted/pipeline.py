@@ -92,10 +92,8 @@ def run_stage(job_id, attempt, stage):
         steps = {r['name']:r for r in rows}
         current = steps.get(stage)
         if current and current['status'] == 'completed':
-            if stage == 'checking_identity' and doc.get('identity_study_status') == 'approved':
-                return 'continue'
             return current['result']['outcome']
-        if doc['status'] in ('ready','uncertain','awaiting_review','awaiting_identity_approval','needs_photo','rejected','failed'):
+        if doc['status'] in ('ready','uncertain','awaiting_review','needs_photo','rejected','failed'):
             return 'stopped'
         if current:
             if current['status'] == 'running' and (datetime.now(timezone.utc)-current['started']).total_seconds() < 600:
@@ -106,8 +104,6 @@ def run_stage(job_id, attempt, stage):
             conn.execute("UPDATE minhwa.attempts SET status='uncertain' WHERE id=%s", (attempt,))
             return 'stopped'
         previous = {name:row['result'] for name,row in steps.items() if row['status']=='completed'}
-        if doc.get('identity_study_status') == 'approved' and 'checking_identity' in previous:
-            previous['checking_identity'] = {**previous['checking_identity'], 'outcome':'continue'}
         if any(name not in previous or previous[name]['outcome'] != 'continue' for name in STAGES[:STAGES.index(stage)]):
             return 'stopped'
         conn.execute("INSERT INTO minhwa.steps(attempt_id,name,status,claim) VALUES(%s,%s,'running',%s)", (attempt,stage,claim))
@@ -141,14 +137,14 @@ def run_stage(job_id, attempt, stage):
             if not all(result['verdict'].get(k) is True for k in IDENTITY_FIELDS if k != 'reason'):
                 doc.update(status='rejected', identity_study_status='failed_qa',
                            error='The identity study did not pass likeness and material checks. Request another interpretation.')
+                outcome = 'stopped'
             else:
                 raw = storage.read('art', f'{doc["id"]}/{attempt}/identity-study.png')
                 storage.put('art', f'{doc["id"]}/identity-study.png', raw)
-                doc.update(status='awaiting_identity_approval', error=None,
-                           identity_study_status='pending',
-                           identity_study=f'/media/{doc["id"]}/identity-study.png',
+                doc.update(error=None,
+                           identity_study_status='approved_internal',
+                           identity_approved_at=datetime.now(timezone.utc).timestamp(),
                            identity_study_hash=result['identity_hash'])
-            outcome = 'stopped'
         elif stage == 'checking_artwork':
             if not all(result['verdict'].get(k) is True for k in ART_FIELDS if k != 'reason'):
                 doc.update(status='awaiting_review')

@@ -86,7 +86,7 @@ The customer may optionally choose a compatible anchor motif, season, symbolism 
 - Produce the pet alone on a plain warm-hanji ground.
 - Do not add motifs, calligraphy, or decorative scenery.
 - Run the face-crop, silhouette, marking-map, and familiar-person tests.
-- Obtain identity approval.
+- Require the internal automated identity and material gate to pass; keep the study private.
 
 No symbolic design work proceeds until the likeness is approved.
 
@@ -189,9 +189,9 @@ Authenticity comes from space, composition, hanji, pigment, line, symbolism, and
 
 Customers choose meaning and may choose one compatible anchor motif. The studio curates supporting elements so the work remains culturally coherent and visually controlled.
 
-### Decision 004 — Two-stage approval
+### Decision 004 — Two-stage internal production
 
-Pet identity is approved before symbolic composition. This separates likeness problems from art-direction problems.
+Pet identity is internally approved before symbolic composition. The customer sees only the completed garden portrait, while the private study separates likeness problems from art-direction problems.
 
 ### Decision 005 — Portable workflow integration
 
@@ -212,8 +212,8 @@ and QA records are stored with the project before publication.
 The experimental `minhwa_workflow/reference_library_v2` set formalizes a
 garden envelope and a pet-to-fauna interaction vector for composition selection.
 Its fictional subjects demonstrate pose, material integration, and motif balance;
-they do not replace intake, the undecorated identity study, likeness tests,
-customer approval, the tradition gate, or the 82/100 final QA requirement.
+they do not replace intake, the private undecorated identity study, likeness tests,
+the internal identity gate, the tradition gate, or the 82/100 final QA requirement.
 
 ### Decision 008 — Three customer-facing garden recipes (superseded runtime attachment model)
 
@@ -232,20 +232,22 @@ The direct plates correct the source library's sideways-gaze bias without
 removing the appealing butterfly or magpie interactions. The customer photo
 remains the only authority for the commissioned pet's actual pose and gaze.
 
-### Decision 010 — Approved identity study followed by whole-canvas synthesis
+### Decision 010 — Private identity study followed by whole-canvas synthesis
 
-Workflow version `minhwa-gardens-v7` uses two image-generation calls. The first
+Workflow version `minhwa-gardens-v8` uses two image-generation calls. The first
 uses only the customer photo to create an undecorated identity study on warm
-hanji. Automated material and likeness gates plus customer approval lock the
-pet before any garden is developed. The second call uses the approved painted
+hanji. Automated material and likeness gates lock the pet internally before
+any garden is developed; the study is never exposed for customer approval. The second call uses the internally approved painted
 study plus five role-specific references from the selected garden and repaints
 the complete canvas from scratch. It must not paste, mask, preserve, or reuse
 identity-study pixels. The original photograph remains final QA evidence.
 
-Final synthesis follows a composition contract: 60–68% pet height for a bust or
-52–60% for a visible full body, 28–35% quiet paper, a 15–24% main garden
-structure, subordinate support/fauna ranges, and a visual path that returns to
-the pet. Separate hard gates cover material unity, painted pet treatment,
+Final synthesis follows a garden-specific composition contract. Peony and lotus
+retain portrait-forward scales; Pine & Magpie limits a bust/reclining pet to
+46–54% canvas height (42–50% full body), while the mature pine spans 55–75% of
+canvas width and reads at least 1.35 times the pet height. Every garden preserves
+28–35% quiet paper, subordinate support/fauna ranges, and a visual path that
+returns to the pet. Separate hard gates cover material unity, painted pet treatment,
 photographic shine, shared edge and light logic, pet/motif scale, quiet-space
 distribution, safe margins, and overall wall-art harmony.
 

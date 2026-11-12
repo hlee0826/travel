@@ -1,10 +1,10 @@
 # Minhwa pet-art workflow
 
-Version: `minhwa-gardens-v7`. The local and hosted studios use the same two-stage art direction.
+Version: `minhwa-gardens-v8`. The local and hosted studios use the same private two-stage art direction.
 
 ## Why two generation stages
 
-The customer photograph first produces an undecorated identity study on plain warm hanji. That study must pass likeness, pose/crop, anatomy, matte-pigment, no-shine, and hanji-integration checks, then receive customer approval.
+The customer photograph first produces a private undecorated identity study on plain warm hanji. That study must pass likeness, pose/crop, anatomy, matte-pigment, no-shine, and hanji-integration checks, then advances automatically without customer exposure or approval.
 
 The approved study and five curated references from the selected garden then guide a separate whole-canvas generation. The final stage repaints the pet and garden together; it must never paste, mask, composite, or preserve pixels from the identity study. The original photograph remains the final likeness comparison but is not attached to the final image-generation call.
 
@@ -25,7 +25,7 @@ Attachment order:
 | --- | --- |
 | 1 | Customer identity, visible pose, head angle, gaze, crop, markings, and proportions |
 
-Generate one undecorated study. Reject it if it contains a garden, invented hidden anatomy, glossy coat highlights, photographic microtexture, camera lighting, or a hard cutout edge. Record customer approval before continuing.
+Generate one undecorated study. Reject it if it contains a garden, invented hidden anatomy, glossy coat highlights, photographic microtexture, camera lighting, or a hard cutout edge. Record the internal gate result before continuing; never publish the study to the customer.
 
 ## Stage 2 — integrated garden
 
@@ -48,7 +48,7 @@ Choose `peony`, `lotus`, or `pine`. Attachment order:
 | 5 | Hanji, matte pigment, ink contour, and material unity |
 | 6 | Mineral palette, barim, and shallow symbolic space |
 
-The final prompt fixes pet scale by crop type, 28–35% quiet paper, subordinate motif ranges, a returning visual path, shared edge/light/material language, and whole-canvas synthesis.
+The final prompt fixes pet scale by both crop and garden type, 28–35% quiet paper, subordinate motif ranges, a returning visual path, shared edge/light/material language, and whole-canvas synthesis. Pine uses 46–54% pet height for bust/reclining/close three-quarter poses or 42–50% for full body, while the mature tree reads at least 1.35 times the pet height and spans 55–75% of canvas width.
 
 ## Acceptance gates
 
@@ -70,7 +70,7 @@ Final artwork:
 5. The selected garden is coherent; motifs remain subordinate and do not cover recognition anchors.
 6. No photographic shine, pasted-study edge, unrelated motifs, generated text, seal, border, or watermark.
 
-Every automated boolean gate must pass. Final release still requires customer approval and the project’s 82/100 QA minimum.
+Every automated boolean gate must pass. The completed garden portrait still requires customer approval and the project’s 82/100 QA minimum.
 
 ## Application integration
 
@@ -78,7 +78,7 @@ Every automated boolean gate must pass. Final release still requires customer ap
 from minhwa_workflow.workflow import identity_inputs, generation_inputs
 
 identity = identity_inputs('/absolute/path/to/normalized-pet.png')
-# Generate, review, and obtain customer approval.
+# Generate and pass the private internal identity gate.
 final = generation_inputs('/absolute/path/to/approved-identity-study.png', 'peony')
 ```
 

@@ -269,6 +269,8 @@ Best for: alert dogs, protection, loyalty, longevity.
 
 - Crooked pine trunk enters from left or upper edge.
 - Pine canopy creates a dark counterweight above the pet.
+- The mature trunk and canopy together read clearly larger than the pet: at least 1.35× its visible height and 55–75% of canvas width.
+- Use a 46–54% pet-height range for bust/reclining/close three-quarter poses and 42–50% for visible full bodies; the pet bounding box stays at or below 44% of canvas width.
 - Low rocks and stylized water/cloud bands create a shallow base.
 - Optional single magpie placed above and away from the pet.
 - Keep the pet in the lower middle and leave an open ochre sky-field behind the head.
@@ -779,7 +781,7 @@ First and foremost, a faithful and immediately recognizable [full-body/seated] c
 3. Record five to eight recognition anchors and the exact marking map.
 4. Generate or draw an undecorated pet study first, on a plain warm hanji ground with no motifs.
 5. Run the face-crop, silhouette, marking-map, and familiar-person tests.
-6. Obtain identity approval before developing any symbolic environment.
+6. Require the internal identity and material gate to pass before developing any symbolic environment; keep the study private from the customer.
 7. Reject identity drift before adding motifs; never ask decorative refinement to solve a likeness problem.
 8. Save the accepted pet description, recognition anchors, reference set, crop, seed, and model settings as the portrait’s identity lock.
 
@@ -805,7 +807,7 @@ First and foremost, a faithful and immediately recognizable [full-body/seated] c
 
 ### 13.1 Technical generation sequence
 
-Production uses two separate image-generation calls with a hard customer gate
+Production uses two separate image-generation calls with a private internal gate
 between them:
 
 1. **Undecorated identity study:** attach only the normalized customer photo.
@@ -814,8 +816,10 @@ between them:
 2. **Identity material gate:** require likeness, markings, pose, crop, no
    invented anatomy, visibly painted pet, matte pigment, no photographic shine,
    hanji integration, and absence of decoration. Every criterion must pass.
-3. **Customer identity approval:** no motif or garden generation begins until
-   the customer approves the study.
+3. **Internal identity approval:** no motif or garden generation begins until
+   every automated likeness, pose, crop, anatomy, painted-material, no-shine,
+   and hanji-integration criterion passes. Store the study privately and advance
+   automatically; do not expose it or request customer approval.
 4. **Integrated whole-canvas synthesis:** attach the approved painted study and
    five role-specific references from the chosen garden. Repaint pet, ground,
    paper, and motifs together from scratch. The study is identity authority,
@@ -828,11 +832,14 @@ between them:
    28–35% quiet-space distribution, a visual path returning to the pet, safe
    margins, and overall wall-art harmony.
 
-For a bust or close three-quarter crop, target 60–68% pet height; for a visible
-full body, target 52–60%. The main garden structure occupies 15–24%, a support
-mass 6–10%, and each small bird or butterfly 3–5%. Final-art retries reuse the
-approved identity study; identity-stage failures or customer rejection return
-to the identity call.
+For peony and lotus, target 56–66% pet height for a bust or close three-quarter
+crop and 50–58% for a visible full body. Pine uses a stricter relational scale:
+46–54% for a bust, reclining, or close three-quarter crop; 42–50% for a visible
+full body; and no more than 44% canvas width. The mature pine must read at least
+1.35× the pet height, span 55–75% of canvas width, and carry 28–38% of visual
+mass. A support mass occupies 6–10%, and each small bird or butterfly 3–5%.
+Final-art retries reuse the internally approved identity study; identity-stage
+failures return to the private identity call.
 
 ### Phase 4 — Finish
 
@@ -865,7 +872,8 @@ ink_hex: "#342A22"
 accent_hex: "#B96B3C"
 text_added_in_post: true
 identity_reference_set: [face, full_body, side]
-identity_study_approved: true
+identity_study_approved_internal: true
+identity_study_customer_visible: false
 recognition_anchors: [face_geometry, eye_spacing, ear_carriage, muzzle_ratio, marking_map, characteristic_pose, tail_shape]
 likeness_tests_passed: [face_crop, silhouette, marking_map, familiar_person]
 model_and_version:
@@ -1007,7 +1015,7 @@ Before generating:
 Before approving:
 
 - [ ] Pet instantly recognizable
-- [ ] Undecorated identity study approved before motif development
+- [ ] Private undecorated identity study passed the internal gate before motif development
 - [ ] Face-crop, silhouette, marking-map, and familiar-person tests passed
 - [ ] Eyes, ears, muzzle, markings, paws, and tail correct
 - [ ] Pet remains the first focal point at thumbnail size

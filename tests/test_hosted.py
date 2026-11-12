@@ -228,9 +228,7 @@ class HostedTests(unittest.TestCase):
                    {'verdict':{k:(True if v=='boolean' else 'passed') for k,v in pipeline.ART_FIELDS.items()}},
                    {'candidate':{'id':attempt,'url':f'/media/{doc["id"]}/art-{attempt}.png','review_status':'approved','artifacts_version':1,'dimensions':[2432,3040]}}]
         with patch('hosted.pipeline.perform',side_effect=responses),patch('hosted.pipeline.storage.read',return_value=b'identity'),patch('hosted.pipeline.storage.put'):
-            for stage in pipeline.STAGES[:3]:pipeline.run_stage(doc['id'],attempt,stage)
-            service.approve_identity(self.session,doc['id'],{'key':secrets.token_hex(12),'approved':True})
-            for stage in pipeline.STAGES[3:]:pipeline.run_stage(doc['id'],attempt,stage)
+            for stage in pipeline.STAGES:pipeline.run_stage(doc['id'],attempt,stage)
         result=self.client.get('/api/jobs/'+doc['id']).json()
         self.assertEqual(result['status'],'ready');self.assertEqual(len(result['candidates']),1)
         self.assertEqual(pipeline.run_stage(doc['id'],attempt,'rendering'),'ready')
@@ -244,9 +242,7 @@ class HostedTests(unittest.TestCase):
                  {'verdict':{k:(True if v=='boolean' else 'passed') for k,v in pipeline.IDENTITY_FIELDS.items()},'identity_hash':'identity-hash'},
                  {'reference_hashes':['b']*6},{'verdict':{'likeness':False}}]
         with patch('hosted.pipeline.perform',side_effect=results),patch('hosted.pipeline.storage.read',return_value=b'identity'),patch('hosted.pipeline.storage.put'):
-            for stage in pipeline.STAGES[:3]:pipeline.run_stage(doc['id'],attempt,stage)
-            service.approve_identity(self.session,doc['id'],{'key':secrets.token_hex(12),'approved':True})
-            for stage in pipeline.STAGES[3:5]:pipeline.run_stage(doc['id'],attempt,stage)
+            for stage in pipeline.STAGES[:5]:pipeline.run_stage(doc['id'],attempt,stage)
         result=self.client.get('/api/jobs/'+doc['id']).json()
         self.assertEqual(result['status'],'awaiting_review');self.assertEqual(result['candidates'],[])
         self.assertEqual(self.client.get(f'/media/{doc["id"]}/art-{attempt}.png').status_code,404)
@@ -268,9 +264,7 @@ class HostedTests(unittest.TestCase):
             reviewer.return_value.identity_study.return_value=(identity_quality,{})
             reviewer.return_value.artwork.return_value=(quality,{})
             images.return_value.generate.return_value=(art.getvalue(),{})
-            for stage in pipeline.STAGES[:3]:pipeline.run_stage(doc['id'],attempt,stage)
-            service.approve_identity(self.session,doc['id'],{'key':secrets.token_hex(12),'approved':True})
-            for stage in pipeline.STAGES[3:]:pipeline.run_stage(doc['id'],attempt,stage)
+            for stage in pipeline.STAGES:pipeline.run_stage(doc['id'],attempt,stage)
             inputs=images.return_value.generate.call_args.args[0]
             self.assertEqual(images.return_value.generate.call_count,2)
             self.assertEqual(len(inputs['referenced_image_paths']),6)

@@ -48,7 +48,7 @@ def main():
         print(json.dumps(rows, indent=2))
     elif args.command == 'pending':
         with LOCK:
-            pending = [j for p in (DATA / 'jobs').glob('*/job.json') if (j := read_json(p))['status'] in ('awaiting_identity_artwork', 'awaiting_identity_approval', 'awaiting_artwork', 'awaiting_review', 'uncertain')]
+            pending = [j for p in (DATA / 'jobs').glob('*/job.json') if (j := read_json(p))['status'] in ('awaiting_identity_artwork', 'awaiting_artwork', 'awaiting_review', 'uncertain')]
         for job in pending:
             print(f"{job['id']} | {job['status']} | {job['style']} | {job_path(job['id'])}")
             for candidate in job['candidates']:
