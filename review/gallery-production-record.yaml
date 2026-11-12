@@ -1,0 +1,108 @@
+project_id: korean_minhwa_pet_portrait
+design_system_version: "1.2"
+record_id: customer_gallery_2026_11_07
+generation_mode: built_in_image_gen
+status: approved_for_demo_gallery
+customer_commission: false
+disclosure: fictional_demo_pets_not_real_customer_likeness
+
+portraits:
+  - id: duri_wisdom_curiosity
+    identity_study: review/gallery-identity-studies/duri-identity-study-v1.png
+    final_artwork: hosted_web/assets/gallery/duri-wisdom-curiosity.png
+    wish_collection: wisdom_curiosity
+    layout_recipe: reduced_chaekgeori
+    aspect_ratio: "4:5"
+    quiet_space_percent: 34
+    recognition_anchors:
+      - narrow_heart_shaped_face
+      - wide_set_pale_olive_almond_eyes
+      - rounded_tall_tufted_ears
+      - broken_forehead_m_and_three_cheek_stripes
+      - narrow_cream_bib
+      - white_left_forepaw
+      - black_tipped_tail_curled_around_paws
+    gates:
+      face_crop: true
+      silhouette: true
+      marking_map: true
+      identity_reference_comparison: true
+      tradition: true
+    qa:
+      identity_and_portrait_success: 37
+      minhwa_visual_grammar: 19
+      composition: 11
+      material_and_technique: 11
+      color: 8
+      symbolic_and_emotional_coherence: 8
+      total: 94
+
+  - id: bori_renewal_resilience
+    identity_study: review/gallery-identity-studies/bori-identity-study-v1.png
+    final_artwork: hosted_web/assets/gallery/bori-renewal-resilience.png
+    wish_collection: renewal_resilience
+    layout_recipe: sparse_vertical
+    aspect_ratio: "4:5"
+    quiet_space_percent: 34
+    recognition_anchors:
+      - compact_wedge_head
+      - narrow_dark_brown_almond_eyes
+      - asymmetric_ear_carriage
+      - biscuit_under_eye_patch
+      - lean_square_body
+      - one_forepaw_advanced
+      - tight_tail_curl_over_left_hip
+    gates:
+      face_crop: true
+      silhouette: true
+      marking_map: true
+      identity_reference_comparison: true
+      tradition: true
+    qa:
+      identity_and_portrait_success: 36
+      minhwa_visual_grammar: 19
+      composition: 11
+      material_and_technique: 11
+      color: 8
+      symbolic_and_emotional_coherence: 8
+      total: 93
+    correction: removed_visible_rectangular_inscription_patch
+
+  - id: nami_longevity_health
+    identity_study: review/gallery-identity-studies/nami-identity-study-v1.png
+    final_artwork: hosted_web/assets/gallery/nami-longevity-health.png
+    wish_collection: longevity_health
+    layout_recipe: guardian_pine_botanical_bracket
+    aspect_ratio: "4:5"
+    quiet_space_percent: 31
+    recognition_anchors:
+      - long_low_body
+      - very_long_drop_ears
+      - slightly_close_hazel_eyes
+      - long_tapered_muzzle_and_liver_nose
+      - red_chestnut_dappling
+      - pale_chest_crescent
+      - restrained_senior_silvering
+      - long_s_curved_tail
+    gates:
+      face_crop: true
+      silhouette: true
+      marking_map: true
+      identity_reference_comparison: true
+      tradition: true
+    qa:
+      identity_and_portrait_success: 37
+      minhwa_visual_grammar: 19
+      composition: 11
+      material_and_technique: 11
+      color: 8
+      symbolic_and_emotional_coherence: 8
+      total: 94
+
+publishing:
+  page_section: home_gallery
+  sample_label_required: true
+  fictional_pet_disclosure_required: true
+  verified_calligraphy_added: false
+  seal_added: false
+  print_proof_completed: false

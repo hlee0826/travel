@@ -1,0 +1,97 @@
+project_id: korean_minhwa_pet_portrait
+design_system_version: "1.2"
+commission_id:
+status: intake
+
+pet:
+  name:
+  species:
+  breed:
+  age_impression:
+  characteristic_expression:
+  characteristic_pose:
+  exact_marking_map:
+  recognition_anchors:
+    - face_geometry
+    - eye_spacing_and_shape
+    - ear_carriage
+    - muzzle_and_nose
+    - defining_marking_1
+    - defining_marking_2
+    - body_proportions
+    - tail_shape
+
+references:
+  face:
+  full_body:
+  side_or_three_quarter:
+  controlling_notes:
+
+identity_stage:
+  identity_study_file:
+  approved: false
+  approved_by:
+  approval_date:
+  tests:
+    face_crop: false
+    silhouette: false
+    marking_map: false
+    familiar_person: false
+
+concept:
+  wish_collection:
+  intended_message:
+  symbolism_intensity: balanced
+  garden:
+  garden_label:
+  anchor_motif:
+  supporting_element:
+  movement_element:
+  movement_element_count:
+  personal_element:
+  layout_recipe:
+  palette:
+  exclusions:
+  approved: false
+
+composition:
+  aspect_ratio: "4:5"
+  pet_frame_height_percent: 56
+  quiet_space_percent: 32
+  inscription_position:
+  silhouette_clear: true
+
+generation:
+  model:
+  model_version:
+  seed:
+  workflow_version: minhwa-gardens-v5
+  curated_reference_files: []
+  curated_reference_roles: []
+  reference_strength:
+  prompt_file:
+  negative_prompt_file:
+  generation_date:
+
+finish:
+  calligraphy_added_in_post: false
+  seal_added_in_post: false
+  print_proof_completed: false
+
+qa:
+  identity_and_portrait_success: 0
+  minhwa_visual_grammar: 0
+  composition: 0
+  material_and_technique: 0
+  color: 0
+  symbolic_and_emotional_coherence: 0
+  total: 0
+  identity_gate_passed: false
+  tradition_gate_passed: false
+  approved_for_delivery: false
+
+files:
+  final_artwork:
+  customer_preview:
+  archived_prompt:
+  notes:

@@ -37,7 +37,7 @@ ACTIVE = {'queued', 'checking_photo', 'painting', 'checking_artwork'}
 FEEDBACK = {'likeness': 'Preserve the distinctive ears, muzzle and recognizable face more closely.',
             'markings': 'Match the visible coat colors and patch locations more closely.',
             'painting': 'Use clearly painted pigment shapes, not photographic fur or a cutout.',
-            'interaction': 'Follow the selected composition more closely for the head and eye direction.',
+            'interaction': 'Preserve the uploaded photo’s head angle, gaze, crop, and characteristic posture; move the garden motifs instead.',
             'composition': 'Keep calm open space and safe margins around the face, ears and paws.'}
 
 
@@ -70,7 +70,11 @@ class StorageLock:
 
 LOCK = StorageLock()
 Image.MAX_IMAGE_PIXELS = 40_000_000
-STYLES = {'peony': ('Peonies and butterflies', 'peony-cat.png'), 'lotus': ('Lotus garden', 'lotus-dog.png')}
+STYLES = {
+    'peony': ('Peony & Butterfly Garden', 'peony-cat.png'),
+    'lotus': ('Lotus & Butterfly Garden', 'lotus-dog.png'),
+    'pine': ('Pine & Magpie Garden', 'pine-cat.jpg'),
+}
 PRICES = {'digital': {'digital': 1900}, 'print': {'5x7': 3900, '12x16': 5900}, 'framed': {'5x7': 7900, '12x16': 10900}}
 ID = re.compile(r'^[a-f0-9]{24}$')
 
@@ -133,33 +137,20 @@ def job_path(job_id):
     return DATA / 'jobs' / job_id
 
 
-def prepare_generation(job, bucket=None):
+def prepare_generation(job):
+    inputs = workflow.generation_inputs(job_path(job['id']) / 'source.png', job['style'])
     folder = job_path(job['id'])
-    if hashlib.sha256((folder / 'source.png').read_bytes()).hexdigest() != job['source_hash']:
-        raise ValueError('Source integrity check failed.')
-    bucket = bucket or job.get('pose_bucket')
-    if bucket is None:
-        job['status'] = 'awaiting_assessment'
-        (folder / 'request.txt').write_text(f"""Inspect {folder / 'source.png'} for one clear cat or dog face.
-Choose one of these pose buckets: {', '.join(workflow.BUCKETS)}.
-Use portrait for head/chest crops or insufficient body evidence. Front/profile follows the face, not the torso. Do not guess hidden posture. If no safe match, ask for another photo.
-Record your selection and prepare references with:
-.venv/bin/python studio.py prepare {job['id']} --bucket SELECTED_BUCKET
-Then read the updated request.txt. Do not generate before references are ready. No external API call is authorized by this manual handoff.
-""")
-        return
-    inputs = workflow.generation_inputs(folder / 'source.png', job['style'], bucket, FEEDBACK.get(job.get('feedback'), ''))
-    job.update(workflow_version=workflow.WORKFLOW_VERSION, pose_bucket=bucket,
-               style_anchors=inputs['reference_files'], status='awaiting_artwork', error=None)
+    job['workflow_version'] = workflow.WORKFLOW_VERSION
+    job['style_anchors'] = inputs['reference_files']
     save_json(folder / 'generation-inputs.json', inputs)
-    (folder / 'request.txt').write_text(f"""Generate the pending Minhwa portrait {job['id']}. Art direction: {workflow.WORKFLOW_VERSION}.
-Read {folder / 'generation-inputs.json'} and inspect every listed image.
-Call the built-in image generation tool with the prompt, referenced_image_paths, and transparent_background arguments. Attach every listed file in order. Do not omit references, use earlier paintings, apply local filters, or call an external model API.
-Generate one candidate. Review likeness, traditional painting style, coherent anatomy, a fresh garden, and this composition: {inputs['composition']}
-Save the output, then run:
-.venv/bin/python studio.py complete {job['id']} /absolute/path/artwork.png
-Do not replace the source or reference images.
-""")
+    (folder / 'request.txt').write_text(f'''Generate the pending Minhwa portrait {job['id']} in this local workspace. Art direction: {workflow.WORKFLOW_VERSION}.
+Read {folder / 'generation-inputs.json'} and inspect every image listed in referenced_image_paths.
+Call the built-in image generation tool using that JSON's prompt, referenced_image_paths, and transparent_background arguments. Attach all seven actual image files in the listed order. Do not substitute text descriptions, omit anchors, use previous outputs, apply local filters, or call an external model API.
+Generate one or two candidates. Before attaching, inspect each against the customer photo and art references for individual likeness, source-pose fidelity, traditional painting integrity, coherent anatomy, garden-specific motif coherence, pet dominance, and safe margins. Revise failures.
+Save the outputs in this workspace, then run:
+.venv/bin/python studio.py complete {job['id']} /absolute/path/candidate-1.png [/absolute/path/candidate-2.png]
+The website will detect the completed artwork. Do not replace the source photo or style anchors.
+''')
 
 
 def public_job(job):
@@ -167,9 +158,8 @@ def public_job(job):
     visible = {k: v for k, v in job.items() if k not in ('session', 'attempts', 'submit_key', 'source_hash', 'identity')}
     visible['candidates'] = [{k: v for k, v in c.items() if k not in ('usage', 'request_id', 'reference_hashes', 'quality_report')}
         for c in job['candidates'] if c.get('review_status', 'approved') == 'approved']
-    visible['can_retry'] = (job['status'] in ('ready', 'rejected', 'failed', 'composition_unavailable') and job['completed_batches'] < 2
-                            and len(job.get('attempts', [])) < 3
-                            and (job['status'] != 'composition_unavailable' or workflow.branch_available(job['style'], job.get('pose_bucket'))))
+    visible['can_retry'] = (job['status'] in ('ready', 'rejected', 'failed') and job['completed_batches'] < 2
+                            and len(job.get('attempts', [])) < 3)
     return visible | {'request': request}
 
 
@@ -181,9 +171,6 @@ def complete_artwork(job_id, images, metadata=None):
             raise ValueError('Only a pending real-photo job can receive artwork.')
         if not 1 <= len(images) <= 2:
             raise ValueError('Attach one or two portrait candidates.')
-        inputs = None
-        if job.get('workflow_version') == workflow.WORKFLOW_VERSION:
-            inputs = workflow.restore_inputs(folder / 'source.png', read_json(folder / 'generation-inputs.json'))
         prepared = [image_bytes(raw) for raw in images]
         for raw, dimensions in prepared:
             candidate_id = secrets.token_hex(8)
@@ -191,9 +178,7 @@ def complete_artwork(job_id, images, metadata=None):
             save_bytes(folder / filename, raw)
             job['candidates'].append({'id': candidate_id, 'url': f'/media/{job_id}/{filename}',
                 'dimensions': list(dimensions), 'workflow_version': job.get('workflow_version', 'minhwa-reference-v1'),
-                'style_anchors': job.get('style_anchors', []),
-                **({'pose_bucket': inputs['bucket'], 'reference_hashes': inputs['reference_hashes'],
-                    'catalog_version': inputs['catalog_version']} if inputs else {}), **(metadata or {})})
+                'style_anchors': job.get('style_anchors', []), **(metadata or {})})
         job['completed_batches'] += 1
         job['status'], job['error'] = 'ready', None
         save_json(folder / 'job.json', job)
@@ -222,10 +207,9 @@ def start_generation(job):
     if sum(j.get('source_hash') == job.get('source_hash') for j, _ in recent) >= 3:
         raise ValueError('This photo has reached its daily attempt limit. Please try tomorrow.')
     attempt = {'id': secrets.token_hex(8), 'created': time.time(), 'status': 'queued',
-               'reserved_cents': ATTEMPT_RESERVATION_CENTS, 'calls': {},
-               'workflow_version': workflow.WORKFLOW_VERSION}
+               'reserved_cents': ATTEMPT_RESERVATION_CENTS, 'calls': {}}
     job.setdefault('attempts', []).append(attempt)
-    job.update(status='queued', generation_provider='openai', error=None, workflow_version=workflow.WORKFLOW_VERSION)
+    job.update(status='queued', generation_provider='openai', error=None)
     save_json(job_path(job['id']) / 'job.json', job)
     WAKE.set()
 
@@ -259,24 +243,16 @@ def generate_artwork(job_id, generator, reviewer=None):
     workspace = folder / 'attempts' / attempt['id']
     workspace.mkdir(parents=True, exist_ok=True)
     try:
-        if hashlib.sha256((folder / 'source.png').read_bytes()).hexdigest() != job['source_hash']:
-            raise ValueError('Source integrity check failed.')
         photo, photo_meta = provider_call(job, 'checking_photo', lambda: reviewer.photo(folder / 'source.png', job['session']))
         save_json(workspace / 'photo-review.json', {'verdict': photo, **photo_meta})
-        if not workflow.photo_usable(photo):
+        if not (photo['usable'] and photo['pet_count'] == 1 and photo['species'].lower() in ('cat', 'dog')
+                and photo['face_visible'] and photo['details_clear']):
             with LOCK:
                 attempt['status'] = 'needs_photo'
-                update_job(job, status='needs_photo', error=photo['reason'] or 'Please choose a clearer photo with a recognizable pose and face.')
+                update_job(job, status='needs_photo', error=photo['reason'] or 'Please choose a clear photo of one cat or dog.')
             return
-        with LOCK:
-            update_job(job, pose_bucket=photo['bucket'])
-        try:
-            inputs = workflow.generation_inputs(folder / 'source.png', job['style'], photo['bucket'], FEEDBACK.get(job.get('feedback'), ''))
-        except workflow.ReferenceUnavailable as exc:
-            with LOCK:
-                attempt['status'] = 'composition_unavailable'
-                update_job(job, status='composition_unavailable', error=str(exc))
-            return
+        identity = photo['identity'] + '\nUnseen or uncertain: ' + photo['unseen_features']
+        inputs = workflow.generation_inputs(folder / 'source.png', job['style'], identity, FEEDBACK.get(job.get('feedback'), ''))
         save_json(workspace / 'inputs.json', inputs)
         raw, metadata = provider_call(job, 'painting', lambda: generator.generate(inputs, job['session']))
         raw, dimensions = image_bytes(raw)
@@ -287,9 +263,8 @@ def generate_artwork(job_id, generator, reviewer=None):
         artwork = workspace / 'artwork.png'
         save_bytes(artwork, raw)
         save_json(workspace / 'generation.json', metadata)
-        inputs = workflow.restore_inputs(folder / 'source.png', inputs)
         quality, review_meta = provider_call(job, 'checking_artwork', lambda: reviewer.artwork(
-            folder / 'source.png', artwork, inputs['referenced_image_paths'][1:], inputs['style'], inputs['composition'], job['session']))
+            folder / 'source.png', artwork, inputs['referenced_image_paths'][1:], job['style'], identity, job['session']))
         save_json(workspace / 'artwork-review.json', {'verdict': quality, **review_meta})
         with LOCK:
             candidate_id = attempt['id']
@@ -297,15 +272,14 @@ def generate_artwork(job_id, generator, reviewer=None):
             save_bytes(folder / filename, raw)
             job['candidates'].append({'id': candidate_id, 'url': f'/media/{job_id}/{filename}',
                 'dimensions': list(dimensions), 'workflow_version': workflow.WORKFLOW_VERSION,
-                'style_anchors': inputs['reference_files'], 'pose_bucket': inputs['bucket'],
-                'catalog_version': inputs['catalog_version'],
+                'style_anchors': inputs['reference_files'],
                 'reference_hashes': inputs['reference_hashes'], 'review_status': 'pending',
                 'quality_report': quality, **metadata})
             attempt['status'] = 'awaiting_review'
-            update_job(job, status='awaiting_review', error=None)
+            update_job(job, status='awaiting_review', identity=identity, error=None)
             if all(quality.get(k) is True for k in ART_FIELDS if k != 'reason'):
                 review_candidate(job_id, candidate_id, True,
-                    'All nine automated artwork checks passed. Customer likeness approval is still required.',
+                    'All automated artwork checks passed. Customer likeness approval is still required.',
                     reviewer='automated')
     except Exception as exc:
         with LOCK:
@@ -557,8 +531,7 @@ class Handler(BaseHTTPRequestHandler):
                     else:
                         save_bytes(folder / 'source.png', raw)
                         job['source'] = f'/media/{job_id}/source.png'
-                        if not GENERATOR:
-                            prepare_generation(job)
+                        prepare_generation(job)
                     if not demo:
                         start_generation(job)
                     save_json(folder / 'job.json', job)
@@ -570,20 +543,19 @@ class Handler(BaseHTTPRequestHandler):
                         raise ValueError('The included portrait batches have been used.')
                     if job.get('generation_provider') == 'openai' and not GENERATOR:
                         raise ValueError('Enable the OpenAI provider before retrying this portrait.')
-                    if job['status'] in ACTIVE | {'awaiting_assessment', 'awaiting_artwork', 'awaiting_review'}:
+                    if job['status'] in ACTIVE | {'awaiting_artwork', 'awaiting_review'}:
                         return self.send(200, public_job(job))
                     if job['status'] in ('uncertain', 'needs_photo'):
                         raise ValueError('This attempt needs a studio review or a different photo before retrying.')
-                    if job['status'] == 'composition_unavailable' and not workflow.branch_available(job['style'], job.get('pose_bucket')):
-                        raise ValueError('This composition is not available yet. The studio needs to add its reference images.')
                     feedback = body.get('feedback', '')
                     if feedback and feedback not in FEEDBACK:
                         raise ValueError('Choose an available correction.')
                     job['feedback'] = feedback
+                    prepare_generation(job)
                     if job.get('generation_provider') == 'openai':
                         start_generation(job)
                     else:
-                        prepare_generation(job)
+                        job['status'], job['error'] = 'awaiting_artwork', None
                         save_json(job_path(job['id']) / 'job.json', job)
                     return self.send(200, public_job(job))
                 if path == '/api/orders':

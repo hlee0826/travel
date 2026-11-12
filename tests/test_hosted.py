@@ -14,7 +14,6 @@ import psycopg
 from psycopg.types.json import Jsonb
 from fastapi.testclient import TestClient
 from hosted import auth, db, service, pipeline
-from pose_fixtures import ready_references
 from app.main import app, download
 
 TEST_DB = os.environ.get('MINHWA_TEST_DATABASE_URL')
@@ -110,9 +109,6 @@ class HostedTests(unittest.TestCase):
         cls.env.stop()
 
     def setUp(self):
-        references = ready_references()
-        references.__enter__()
-        self.addCleanup(references.__exit__, None, None, None)
         with db.connect() as conn:
             conn.execute('TRUNCATE minhwa.sessions,minhwa.login_limits,minhwa.uploads,minhwa.jobs,minhwa.attempts,minhwa.steps,minhwa.orders CASCADE')
         self.client=TestClient(app, base_url='https://studio.test', raise_server_exceptions=False)
@@ -120,10 +116,6 @@ class HostedTests(unittest.TestCase):
         self.token=auth.login('test-password-for-studio-only','test')
         self.session=auth.session(self.token)
         self.client.cookies.set(auth.COOKIE,self.token)
-
-    def inputs(self):
-        from minhwa_workflow import workflow
-        return workflow.generation_inputs(workflow.REFERENCE_ROOT / 'peony/standing_front.png', 'peony', 'standing_front')
 
     def demo(self):
         return service.create_job(self.session, {'key':secrets.token_hex(12),'demo':True,'style':'peony','name':'Miso'})
@@ -204,7 +196,7 @@ class HostedTests(unittest.TestCase):
 
     def test_paid_stage_is_never_repeated(self):
         doc,_=self.real(); attempt=doc['attempt_id']
-        photo={'verdict':{'usable':True,'bucket':'standing_front','reason':''}, 'inputs':self.inputs()}
+        photo={'verdict':{'usable':True,'pet_count':1,'species':'dog','face_visible':True,'details_clear':True,'identity':'white dog','unseen_features':'none','reason':'good'}}
         with patch('hosted.pipeline.perform',return_value=photo) as perform:
             self.assertEqual(pipeline.run_stage(doc['id'],attempt,'checking_photo'),'continue')
             self.assertEqual(pipeline.run_stage(doc['id'],attempt,'checking_photo'),'continue')
@@ -215,42 +207,6 @@ class HostedTests(unittest.TestCase):
             self.assertEqual(perform.call_count,1)
         result=self.client.get('/api/jobs/'+doc['id']).json()
         self.assertEqual(result['status'],'uncertain');self.assertNotIn('secret',str(result));self.assertFalse(result['can_retry'])
-
-    def test_unavailable_bucket_stops_workflow_and_retry_until_assets_ready(self):
-        from minhwa_workflow import workflow
-        import json
-        doc, _ = self.real()
-        attempt = doc['attempt_id']
-        catalog = json.loads(workflow.CATALOG_PATH.read_text())
-        catalog['styles']['peony']['standing_front']['status'] = 'pending'
-        workflow.CATALOG_PATH.write_text(json.dumps(catalog))
-        photo = {'verdict': {'usable': True, 'bucket': 'standing_front', 'reason': ''},
-                 'unavailable': 'This composition is not available yet.'}
-        with patch('hosted.pipeline.perform', return_value=photo) as perform:
-            self.assertEqual(pipeline.run_stage(doc['id'], attempt, 'checking_photo'), 'stopped')
-            self.assertEqual(pipeline.run_stage(doc['id'], attempt, 'painting'), 'stopped')
-            self.assertEqual(perform.call_count, 1)
-        result = self.client.get('/api/jobs/' + doc['id']).json()
-        self.assertEqual(result['status'], 'composition_unavailable')
-        self.assertFalse(result['can_retry'])
-        with self.assertRaisesRegex(ValueError, 'not available'):
-            service.retry(self.session, doc['id'], {'key': secrets.token_hex(12)})
-        catalog['styles']['peony']['standing_front']['status'] = 'ready'
-        workflow.CATALOG_PATH.write_text(json.dumps(catalog))
-        self.assertTrue(self.client.get('/api/jobs/' + doc['id']).json()['can_retry'])
-        again = service.retry(self.session, doc['id'], {'key': secrets.token_hex(12)})
-        self.assertEqual(again['status'], 'queued')
-        self.assertNotEqual(again['attempt_id'], attempt)
-
-    def test_unmatched_bucket_requests_photo_and_never_paints(self):
-        doc, _ = self.real()
-        photo = {'verdict': {'usable': True, 'bucket': None, 'reason': 'Please choose a photo with a clearer pose.'}}
-        with patch('hosted.pipeline.perform', return_value=photo) as perform:
-            self.assertEqual(pipeline.run_stage(doc['id'], doc['attempt_id'], 'checking_photo'), 'stopped')
-            self.assertEqual(pipeline.run_stage(doc['id'], doc['attempt_id'], 'painting'), 'stopped')
-            self.assertEqual(perform.call_count, 1)
-        result = self.client.get('/api/jobs/' + doc['id']).json()
-        self.assertEqual(result['status'], 'needs_photo')
 
     def test_inflight_and_stale_claims_do_not_reissue(self):
         doc,_=self.real(); attempt=doc['attempt_id']
@@ -265,8 +221,8 @@ class HostedTests(unittest.TestCase):
 
     def test_quality_gate_and_artifacts_publish_atomically(self):
         doc,_=self.real(); attempt=doc['attempt_id']
-        responses=[{'verdict':{'usable':True,'bucket':'standing_front','reason':''}, 'inputs':self.inputs()},
-                   {'reference_hashes':['a']*5}, {'verdict':{k:True for k in pipeline.ART_FIELDS}},
+        responses=[{'verdict':{'usable':True,'pet_count':1,'species':'cat','face_visible':True,'details_clear':True}},
+                   {'reference_hashes':['a']*7}, {'verdict':{k:True for k in pipeline.ART_FIELDS}},
                    {'candidate':{'id':attempt,'url':f'/media/{doc["id"]}/art-{attempt}.png','review_status':'approved','artifacts_version':1,'dimensions':[2432,3040]}}]
         with patch('hosted.pipeline.perform',side_effect=responses):
             for stage in pipeline.STAGES:
@@ -279,7 +235,7 @@ class HostedTests(unittest.TestCase):
 
     def test_flagged_art_stays_private(self):
         doc,_=self.real(); attempt=doc['attempt_id']
-        results=[{'verdict':{'usable':True,'bucket':'standing_front','reason':''}, 'inputs':self.inputs()},
+        results=[{'verdict':{'usable':True,'pet_count':1,'species':'cat','face_visible':True,'details_clear':True}},
                  {},{'verdict':{'likeness':False}}]
         with patch('hosted.pipeline.perform',side_effect=results):
             for stage in pipeline.STAGES[:3]:pipeline.run_stage(doc['id'],attempt,stage)
@@ -288,7 +244,7 @@ class HostedTests(unittest.TestCase):
         self.assertEqual(self.client.get(f'/media/{doc["id"]}/art-{attempt}.png').status_code,404)
         with self.assertRaises(ValueError):service.order(self.session,{'key':secrets.token_hex(12),'job_id':doc['id'],'candidate_id':attempt,'approved':True,'product':'digital','size':'digital'})
 
-    def test_actual_pipeline_keeps_selected_references_and_immutable_downloads(self):
+    def test_actual_pipeline_keeps_selected_garden_references_and_immutable_downloads(self):
         doc,_=self.real(); attempt=doc['attempt_id']
         source=io.BytesIO();Image.new('RGB',(600,800),'red').save(source,'PNG')
         art=io.BytesIO();Image.new('RGB',pipeline.IMAGE_SIZE,'green').save(art,'PNG')
@@ -296,7 +252,7 @@ class HostedTests(unittest.TestCase):
         def put(bucket,key,raw,mime='image/png'):
             if (bucket,key) in objects:self.assertEqual(objects[bucket,key],raw)
             objects[bucket,key]=raw
-        photo={'usable':True,'bucket':'standing_front','reason':''}
+        photo={'usable':True,'pet_count':1,'species':'dog','face_visible':True,'details_clear':True,'identity':'white dog','unseen_features':'none','reason':'good'}
         quality={k:True for k in pipeline.ART_FIELDS};quality['reason']='passed'
         with patch.dict(os.environ,{'OPENAI_API_KEY':'test-only'}),patch('hosted.storage.read',side_effect=lambda b,k,**kw:objects[b,k]),patch('hosted.storage.put',side_effect=put),patch('hosted.pipeline.OpenAIReview') as reviewer,patch('hosted.pipeline.OpenAIImages') as images:
             reviewer.return_value.photo.return_value=(photo,{})
@@ -304,10 +260,10 @@ class HostedTests(unittest.TestCase):
             images.return_value.generate.return_value=(art.getvalue(),{})
             for stage in pipeline.STAGES:pipeline.run_stage(doc['id'],attempt,stage)
             inputs=images.return_value.generate.call_args.args[0]
-            self.assertEqual(len(inputs['referenced_image_paths']),2)
-            self.assertEqual(len(inputs['reference_hashes']),2)
-            self.assertIn('IDENTITY ONLY',inputs['prompt'])
-            self.assertEqual(len(reviewer.return_value.artwork.call_args.args[2]),1)
+            self.assertEqual(len(inputs['referenced_image_paths']),7)
+            self.assertEqual(len(inputs['reference_hashes']),7)
+            self.assertIn('CUSTOMER IDENTITY AND POSE AUTHORITY',inputs['prompt'])
+            self.assertEqual(len(reviewer.return_value.artwork.call_args.args[2]),6)
         self.assertIn(('art',f'{doc["id"]}/{attempt}/master.png'),objects)
         self.assertIn(('art',f'{doc["id"]}/{attempt}/print-12x16.png'),objects)
         body={'key':secrets.token_hex(12),'job_id':doc['id'],'candidate_id':attempt,'approved':True,'product':'digital','size':'digital'}

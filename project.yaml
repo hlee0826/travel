@@ -1,0 +1,103 @@
+project:
+  id: korean_minhwa_pet_portrait
+  name_en: Korean Traditional Minhwa Pet Portraits
+  name_ko: 한국전통민화 반려동물 초상화
+  project_version: "1.0"
+  design_system_version: "1.2"
+  status: foundation_ready
+  source_of_truth: PROJECT.md
+  design_guideline: GUIDELINE.md
+
+objective: >-
+  Create immediately recognizable commissioned portraits of individual pets
+  through an accurate Korean minhwa visual language.
+
+priority_hierarchy:
+  - individual_pet_likeness
+  - traditional_korean_painting_integrity
+  - meaningful_symbolism
+  - supporting_decoration
+
+governing_rule: >-
+  If a motif, decoration, or composition interferes with recognition,
+  change the element and preserve the pet.
+
+approval_gates:
+  identity:
+    required: true
+    tests:
+      - face_crop
+      - silhouette
+      - marking_map
+      - familiar_person_recognition
+  tradition:
+    required: true
+    tests:
+      - shallow_symbolic_space
+      - hanji_pigment_barim_coherence
+      - korean_minhwa_visual_grammar
+      - subordinate_coherent_motifs
+      - no_generic_pan_asian_substitution
+
+wish_collections:
+  - id: longevity_health
+    name_en: Longevity & Health
+    name_ko: 장수와 건강
+  - id: love_family
+    name_en: Love & Family
+    name_ko: 사랑과 가족
+  - id: protection_good_news
+    name_en: Protection & Good News
+    name_ko: 수호와 길보
+  - id: peace_healing
+    name_en: Peace & Healing
+    name_ko: 평안과 치유
+  - id: prosperity_celebration
+    name_en: Prosperity & Celebration
+    name_ko: 부귀와 축복
+  - id: wisdom_curiosity
+    name_en: Wisdom & Curiosity
+    name_ko: 지혜와 호기심
+  - id: renewal_resilience
+    name_en: Renewal & Resilience
+    name_ko: 새로움과 굳셈
+
+default_specification:
+  aspect_ratio: "4:5"
+  full_body_pet_frame_height_percent: "52-62"
+  bust_pet_frame_height_percent: "60-72"
+  quiet_space_percent: "28-35"
+  symbolism_intensity: balanced
+  maximum_anchor_motifs: 1
+  minimum_qa_score: 82
+  identity_qa_points: 40
+  text_generated_in_image: false
+
+templates:
+  customer_intake: templates/customer_intake.md
+  artwork_brief: templates/artwork_brief.md
+  production_record: templates/production_record.yaml
+
+customer_gardens:
+  - id: peony
+    name_en: "Peony & Butterfly Garden"
+    name_ko: 모란과 나비
+    reference_count_per_generation: 6
+  - id: lotus
+    name_en: "Lotus & Butterfly Garden"
+    name_ko: 연꽃과 나비
+    reference_count_per_generation: 6
+  - id: pine
+    name_en: "Pine & Magpie Garden"
+    name_ko: 소나무와 까치
+    reference_count_per_generation: 6
+
+image_generation_workflow:
+  path: minhwa_workflow
+  version: minhwa-gardens-v5
+  source_repository: https://github.com/hlee0826/travel
+  source_commit: 4b0f5d44de20a27150e53fded056c72b65eb9ab7
+  imported_on: "2026-11-05"
+  role: portable_codex_generation_handoff
+  design_authority: GUIDELINE.md
+  required_approval_process: PROJECT.md

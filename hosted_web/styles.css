@@ -162,12 +162,12 @@ select { display: block; width: 100%; padding: 12px; margin-top: 6px; border: 1p
 .builder-copy .fine { margin-top: 12px; }
 .garden-section { background: var(--surface); }
 .garden-mark { color: var(--primary); font: 3.3rem/1 var(--display); letter-spacing: .1em; }
-.garden-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 35px; }
+.garden-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 28px; }
 .garden-card { text-decoration: none; }
 .garden-image { height: 340px; overflow: hidden; }
 .garden-image img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 35%; transition: transform .65s var(--ease); }
 .garden-card:hover img { transform: scale(1.025); }
-.garden-card h3 { font: 1.6rem/1.2 var(--display); display: flex; justify-content: space-between; margin: 22px 0 10px; }
+.garden-card h3 { font: 1.4rem/1.2 var(--display); display: flex; justify-content: space-between; gap: 12px; margin: 22px 0 10px; }
 .garden-card h3 span { font: 1.2rem sans-serif; color: var(--primary); }
 .garden-card p { color: var(--muted); font-size: .86rem; margin: 0; }
 .faq-section { display: grid; grid-template-columns: .8fr 1.2fr; gap: 10%; }
@@ -254,6 +254,14 @@ select { display: block; width: 100%; padding: 12px; margin-top: 6px; border: 1p
 .field-title, fieldset legend { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 10px; }
 .field input[type=text] { width: 100%; padding: 12px; border: 1px solid #a49a8b; border-radius: 4px; background: var(--paper); color: var(--ink); }
 input::placeholder { color: var(--muted); }
+.garden-field { margin-bottom: 10px; }
+.garden-field select { margin-top: 0; }
+.garden-choice-preview { display: flex; align-items: center; gap: 15px; margin: 0 0 22px; padding: 12px 0; border-block: 1px solid var(--line); }
+.garden-choice-preview img { width: 64px; height: 80px; object-fit: cover; object-position: 50% 35%; flex: 0 0 auto; }
+.garden-choice-preview figcaption { min-width: 0; display: grid; gap: 2px; }
+.garden-choice-preview strong { font: 1.05rem/1.25 var(--display); }
+.garden-choice-preview span { color: var(--primary); font-size: .78rem; }
+.garden-choice-preview small { color: var(--muted); font-size: .75rem; line-height: 1.45; }
 .upload { border: 1px dashed #9e705c; border-radius: 5px; padding: 22px; background: var(--paper); }
 .upload label { display: block; font-size: .9rem; font-weight: 600; margin-bottom: 13px; }
 .upload input { font-size: .77rem; max-width: 100%; }
@@ -360,6 +368,7 @@ textarea { width: 100%; min-height: 180px; font-size: .78rem; background: var(--
   .process-list { gap: 25px; }
   .process-list h3 { font-size: .95rem; }
   .builder-scene { padding: 35px 30px 20px; }
+  .garden-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .garden-image { height: 270px; }
   .faq-section { gap: 6%; }
   .page { padding-inline: 25px; }

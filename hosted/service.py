@@ -9,7 +9,7 @@ from psycopg.types.json import Jsonb
 from hosted import db, storage, auth
 from hosted.config import ROOT, generation_enabled
 from server import ID, STYLES, FEEDBACK, quote, image_bytes
-from minhwa_workflow.workflow import WORKFLOW_VERSION, branch_available
+from minhwa_workflow.workflow import WORKFLOW_VERSION
 
 
 def identifier(value):
@@ -76,8 +76,7 @@ def reserve(conn, doc):
         raise ValueError('The daily allowance for this session or photo has been reached.')
     attempt_id = secrets.token_hex(12)
     conn.execute('INSERT INTO minhwa.attempts(id,job_id,reserved_cents) VALUES(%s,%s,300)', (attempt_id,doc['id']))
-    doc.pop('composition_metadata', None)
-    doc.update(status='queued', error=None, attempt_id=attempt_id, updated=time.time(), workflow_version=WORKFLOW_VERSION)
+    doc.update(status='queued', error=None, attempt_id=attempt_id, updated=time.time())
     db.save_job(conn, doc)
     return doc
 
@@ -158,10 +157,8 @@ def retry(session, job_id, body):
             doc.setdefault('retry_keys', []).append(retry_key)
             db.save_job(conn, doc)
             return doc
-        if doc['demo'] or doc['status'] not in ('ready','rejected','failed','composition_unavailable'):
+        if doc['demo'] or doc['status'] not in ('ready','rejected','failed'):
             raise ValueError('This portrait needs a studio check or a new photo before retrying.')
-        if doc['status'] == 'composition_unavailable' and not branch_available(doc['style'], doc.get('pose_bucket')):
-            raise ValueError('This composition is not available yet. The studio needs to add its reference images.')
         doc.setdefault('retry_keys', []).append(retry_key)
         doc['feedback'] = feedback
         return reserve(conn, doc)
@@ -173,7 +170,7 @@ def public_job(doc, conn):
     result['candidates'] = [{k:c[k] for k in ('id','url','dimensions','artifacts_version') if k in c}
                             for c in doc['candidates'] if c.get('review_status','approved') == 'approved']
     attempts = conn.execute('SELECT count(*) n FROM minhwa.attempts WHERE job_id=%s', (doc['id'],)).fetchone()['n']
-    result['can_retry'] = not doc['demo'] and doc['status'] in ('ready','failed','rejected','composition_unavailable') and doc['completed_batches'] < 2 and attempts < 3 and (doc['status'] != 'composition_unavailable' or branch_available(doc['style'], doc.get('pose_bucket')))
+    result['can_retry'] = not doc['demo'] and doc['status'] in ('ready','failed','rejected') and doc['completed_batches'] < 2 and attempts < 3
     result['request'] = None
     return result
 

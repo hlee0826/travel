@@ -18,3 +18,28 @@ supabase/.temp/
 output/
 research/
 references/
+
+# Private commission records and source-library masters remain local.
+commissions/
+minhwa_workflow/reference_library_v2/images/
+
+# Ship only the 18 active runtime references; keep superseded copies local.
+minhwa_workflow/garden-anchors/*
+!minhwa_workflow/garden-anchors/cat-16-peony-butterflies.jpg
+!minhwa_workflow/garden-anchors/dog-21-peony-butterflies.jpg
+!minhwa_workflow/garden-anchors/cat-02-peony-butterflies.jpg
+!minhwa_workflow/garden-anchors/dog-02-peony-butterflies.jpg
+!minhwa_workflow/garden-anchors/cat-03-peony-butterflies.jpg
+!minhwa_workflow/garden-anchors/dog-03-peony-butterflies.jpg
+!minhwa_workflow/garden-anchors/cat-17-lotus-butterflies.jpg
+!minhwa_workflow/garden-anchors/dog-22-lotus-butterflies.jpg
+!minhwa_workflow/garden-anchors/cat-05-lotus-butterflies.jpg
+!minhwa_workflow/garden-anchors/dog-04-lotus-butterflies.jpg
+!minhwa_workflow/garden-anchors/cat-06-lotus-butterflies.jpg
+!minhwa_workflow/garden-anchors/dog-05-lotus-butterflies.jpg
+!minhwa_workflow/garden-anchors/cat-18-pine-magpie.jpg
+!minhwa_workflow/garden-anchors/dog-23-pine-magpie.jpg
+!minhwa_workflow/garden-anchors/cat-09-pine-magpie.jpg
+!minhwa_workflow/garden-anchors/dog-09-pine-magpie.jpg
+!minhwa_workflow/garden-anchors/cat-10-pine-magpie.jpg
+!minhwa_workflow/garden-anchors/dog-10-pine-magpie.jpg

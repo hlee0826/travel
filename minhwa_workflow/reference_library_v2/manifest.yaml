@@ -1,0 +1,55 @@
+library_id: integrated_garden_reference_v2
+design_system_version: "1.2"
+status: experimental_reference_set
+purpose: composition_and_rendering_reference_only
+library_count: 41
+documented_core_count: 20
+exploratory_extension_count: 15
+direct_to_viewer_calibration_count: 6
+species:
+  dog:
+    count: 10
+    distribution: {peony_butterflies: 3, lotus_butterflies: 3, plum_butterflies: 2, pine_magpie: 2}
+  cat:
+    count: 10
+    distribution: {peony_butterflies: 3, lotus_butterflies: 3, plum_butterflies: 2, pine_magpie: 2}
+invariants:
+  aspect_ratio: "4:5 vertical"
+  pet_frame_height_percent: "50-64"
+  quiet_space_percent: "28-36"
+  pet_detail_hierarchy: "eyes and face > chest and paws > torso > garden > small fauna > paper"
+  medium: "matte ink and translucent layered mineral/plant-like pigment on warm mulberry hanji"
+  space: "shallow, stacked, symbolic; no photographic horizon"
+  text: none
+  seal: none
+  watermark: none
+  generated_ui: none
+plates:
+  - {id: dog-01, garden: peony_butterflies, pose: seated frontal with gentle head tilt, interaction: eyes follow butterfly upper left}
+  - {id: dog-02, garden: peony_butterflies, pose: standing three-quarter with one forepaw advanced, interaction: muzzle turns toward butterfly right}
+  - {id: dog-03, garden: peony_butterflies, pose: relaxed side-recline with forelegs crossed, interaction: gaze tracks low butterfly}
+  - {id: dog-04, garden: lotus_butterflies, pose: upright sit on broad lotus leaf, interaction: nose lifted toward butterfly}
+  - {id: dog-05, garden: lotus_butterflies, pose: sphinx-like lie with chin raised, interaction: eyes follow pale butterfly}
+  - {id: dog-06, garden: lotus_butterflies, pose: compact three-quarter sit with tail curled beside paws, interaction: head turns over shoulder}
+  - {id: dog-07, garden: plum_butterflies, pose: standing profile with head turned back, interaction: butterfly beside blossom branch}
+  - {id: dog-08, garden: plum_butterflies, pose: low play-bow held as quiet curiosity, interaction: lifted gaze toward butterfly}
+  - {id: dog-09, garden: pine_magpie, pose: alert seated guardian, interaction: eyes meet magpie on high branch}
+  - {id: dog-10, garden: pine_magpie, pose: calm standing profile with one paw lifted, interaction: nose points toward magpie}
+  - {id: cat-01, garden: peony_butterflies, pose: tall frontal sit with tail wrapped around paws, interaction: eyes follow butterfly upper right}
+  - {id: cat-02, garden: peony_butterflies, pose: three-quarter sit with one forepaw lifted, interaction: paw and eyes address butterfly}
+  - {id: cat-03, garden: peony_butterflies, pose: long side-recline with forelegs crossed, interaction: head tilts toward low butterfly}
+  - {id: cat-04, garden: lotus_butterflies, pose: compact loaf on broad lotus leaf, interaction: gaze follows butterfly left}
+  - {id: cat-05, garden: lotus_butterflies, pose: upright sit with body profile and head turned front, interaction: eyes catch butterfly above}
+  - {id: cat-06, garden: lotus_butterflies, pose: curved crescent recline with tail echoing leaf, interaction: nose near pale butterfly}
+  - {id: cat-07, garden: plum_butterflies, pose: standing profile with arched tail, interaction: nose approaches butterfly beside blossom}
+  - {id: cat-08, garden: plum_butterflies, pose: playful back-roll with paws gathered, interaction: upside-down gaze follows butterfly}
+  - {id: cat-09, garden: pine_magpie, pose: alert seated three-quarter guardian, interaction: eyes meet magpie above}
+  - {id: cat-10, garden: pine_magpie, pose: low stalking walk held in stillness, interaction: head raised toward magpie}
+direct_to_viewer_calibration_plates:
+  - {id: cat-16, garden: peony_butterflies, pose: seated frontal, interaction: direct viewer gaze; butterflies remain environmental}
+  - {id: dog-21, garden: peony_butterflies, pose: seated frontal, interaction: direct viewer gaze; butterflies remain environmental}
+  - {id: cat-17, garden: lotus_butterflies, pose: seated frontal on broad lotus leaf, interaction: direct viewer gaze; butterflies remain environmental}
+  - {id: dog-22, garden: lotus_butterflies, pose: seated frontal on broad lotus leaf, interaction: direct viewer gaze; butterflies remain environmental}
+  - {id: cat-18, garden: pine_magpie, pose: seated frontal guardian, interaction: direct viewer gaze; magpie remains environmental}
+  - {id: dog-23, garden: pine_magpie, pose: seated frontal guardian, interaction: direct viewer gaze; magpie remains environmental}
+

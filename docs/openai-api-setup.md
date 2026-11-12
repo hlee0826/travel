@@ -10,10 +10,10 @@ The Pro credit benefit was activated with explicit approval of its Codex API-key
 
 - Images: `gpt-image-2.6-sunburst`, `/v1/images/edits`, one opaque high-quality 2432 × 3040 PNG per attempt.
 - Checks: `gpt-5-mini`, `/v1/responses`, strict structured output, `store:false`, photo first and artwork afterward.
-- V5 photo assessment returns only usable, bucket, and reason. Generation receives the original photo plus one or two references selected for that garden and pose bucket. Art review compares source, candidate, and the same selected set. Catalog entries remain pending until branch references are supplied.
+- Five generation inputs: original pet identity photo and all four user-supplied painting references. Art review compares source, candidate and all anchors.
 - `generation.py` handles private configuration and provider calls. `server.py` persists a serial local queue and automatically releases results only when every artwork check passes; flagged results wait for studio review. `studio.py` provides review, reconciliation and usage estimates.
 - Calls are never automatically retried. Interrupted or ambiguous outcomes stay held for operator reconciliation. Queue persistence depends on retaining `.studio/` on disk.
 
-Live image generation and review were tested with the earlier four-anchor workflow; v5 branch quality and savings still require live validation. See [generation QA](generation-qa.md) for exact evidence and costs. Token-based estimates are not invoices; billing is authoritative. Large custom image dimensions are supported but experimental above the documentation's usual range; physical print quality still needs proofing.
+Live image generation and review have now been tested. See [generation QA](generation-qa.md) for exact evidence and costs. Token-based estimates are not invoices; billing is authoritative. Large custom image dimensions are supported but experimental above the documentation's usual range; physical print quality still needs proofing.
 
 Official references: [image generation](https://developers.openai.com/api/docs/guides/image-generation), [structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [image inputs](https://developers.openai.com/api/docs/guides/images-vision), [pricing](https://developers.openai.com/api/docs/pricing).

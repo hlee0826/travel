@@ -5,12 +5,8 @@ The existing pinnedby.com deployment and data remain separate. Minhwa has its ow
 Vercel project, restricted cloud database login, and private storage buckets.
 Password login, authenticated pages, signed resumable uploads, sample checkout,
 and anonymous access protection are verified live. A real hosted portrait completed
-photo review, generation with all five input hashes, all nine artwork checks, and
+photo review, generation with the original input hashes, artwork checks, and
 artifact rendering. PNG/JPEG downloads and blocked public storage URLs also passed. Checkout and fulfillment are simulated.
-
-## Current workspace update
-
-The November 7 v5 pose-routing update is implemented locally but has not been deployed. It classifies photos into eight pose buckets and selects one or two references per garden/bucket. All sets are pending until their images are supplied. Deploy the catalog and reference assets together; older hosted attempts without a saved selection stop for reconciliation rather than mixing workflows. The live evidence above describes v4.
 
 ## Architecture
 
@@ -26,7 +22,9 @@ The November 7 v5 pose-routing update is implemented locally but has not been de
 - Supabase pg_net wakes the dispatcher after a committed attempt. A one-minute
   Supabase cron checks for undispatched/stalled attempts; it only makes an HTTP
   request when work is due. The SDK handles normal workflow continuation.
-- Original photo plus the selected bucket’s one or two private references are used in v5. Photo assessment returns only suitability, bucket, and a short failure reason. All nine artwork checks remain, with forward gaze for front buckets and butterfly interaction for profile buckets.
+- Original photo plus six private references selected for the chosen garden are
+  used. The photo controls identity and pose; garden-aware quality checks cover
+  motif coherence, source-pose fidelity, pet dominance, and painting integrity.
 - Every paid call gets a database claim first. Re-delivery returns saved results;
   interrupted/ambiguous calls stop for operator reconciliation rather than paying
   again. A successful OpenAI response lost before persistence cannot be recovered
@@ -113,7 +111,7 @@ Load the private server settings in a trusted shell without printing them.
 ```
 .venv/bin/python -m hosted.admin list
 .venv/bin/python -m hosted.admin inspect --job JOB_ID --directory /private/tmp/minhwa-review-unique
-.venv/bin/python -m hosted.admin approve --job JOB_ID --note "Compared original and all nine criteria; explain the manual override."
+.venv/bin/python -m hosted.admin approve --job JOB_ID --note "Compared the original, selected references, and every quality criterion; explain the manual override."
 .venv/bin/python -m hosted.admin reject --job JOB_ID --note "Explain the failed likeness or composition check."
 .venv/bin/python -m hosted.admin reconcile --job JOB_ID --note "Checked provider usage and request outcome; explain why a new attempt is safe."
 ```
@@ -145,7 +143,7 @@ References: [Vercel Python workflows](https://vercel.com/kb/guide/python-and-dur
 November 6: 37 application/hosting tests and 3 reference-workflow tests passed.
 These cover the original local app, password/origin checks, owner-only access,
 concurrent budget admission, idempotent submissions/retries, interrupted-call
-handling, all five image inputs, nine quality gates, immutable rendered files,
+handling, ordered image inputs, quality gates, immutable rendered files,
 and restrictive shared-project storage policies. Paid calls and Storage transport
 were mocked; SQL ran against real disposable PostgreSQL.
 

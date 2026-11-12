@@ -10,7 +10,7 @@ from hosted import db, storage
 from hosted.config import required, generation_enabled
 from generation import OpenAIImages, OpenAIReview, IMAGE_SIZE, ART_FIELDS
 from artifacts import artwork_files, matted_print
-from minhwa_workflow.workflow import generation_inputs, restore_inputs, photo_usable, ReferenceUnavailable
+from minhwa_workflow.workflow import generation_inputs
 from server import image_bytes, FEEDBACK
 
 STAGES = ('checking_photo', 'painting', 'checking_artwork', 'rendering')
@@ -24,8 +24,7 @@ def render_files(doc, attempt):
         storage.put('art', f'{doc["id"]}/{attempt}/{name}', data, 'image/jpeg' if name.endswith('.jpg') else 'image/png')
     return {'id':attempt, 'url':f'/media/{doc["id"]}/art-{attempt}.png',
             'dimensions':list(IMAGE_SIZE), 'artifacts_version':1, 'review_status':'approved',
-            'master_sha256':hashlib.sha256(files['master.png']).hexdigest(),
-            **doc.get('composition_metadata', {})}
+            'master_sha256':hashlib.sha256(files['master.png']).hexdigest()}
 
 
 def perform(doc, attempt, stage, previous):
@@ -39,17 +38,10 @@ def perform(doc, attempt, stage, previous):
         review = OpenAIReview(required('OPENAI_API_KEY'), os.environ.get('OPENAI_REVIEW_MODEL','gpt-5-mini'))
         if stage == 'checking_photo':
             verdict, metadata = review.photo(source, doc['session'])
-            result = {'verdict':verdict, 'metadata':metadata}
-            if photo_usable(verdict):
-                try:
-                    result['inputs'] = generation_inputs(source, doc['style'], verdict['bucket'], FEEDBACK.get(doc.get('feedback'), ''))
-                except ReferenceUnavailable as exc:
-                    result['unavailable'] = str(exc)
-            return result
-        saved = previous['checking_photo'].get('inputs')
-        if not saved:
-            raise ValueError('This attempt has no saved pose selection. The studio must check it before continuing.')
-        inputs = restore_inputs(source, saved)
+            return {'verdict':verdict, 'metadata':metadata}
+        photo = previous['checking_photo']['verdict']
+        identity = photo['identity'] + '\nUnseen or uncertain: ' + photo['unseen_features']
+        inputs = generation_inputs(source, doc['style'], identity, FEEDBACK.get(doc.get('feedback'), ''))
         if stage == 'painting':
             raw, metadata = OpenAIImages(required('OPENAI_API_KEY'), os.environ.get('OPENAI_IMAGE_MODEL','gpt-image-2.6-sunburst')).generate(inputs, doc['session'])
             raw, dimensions = image_bytes(raw)
@@ -61,7 +53,7 @@ def perform(doc, attempt, stage, previous):
             raise ValueError('Reference integrity check failed.')
         artwork = Path(directory)/'artwork.png'
         artwork.write_bytes(storage.read('art', f'{doc["id"]}/{attempt}/artwork.png'))
-        verdict, metadata = review.artwork(source, artwork, inputs['referenced_image_paths'][1:], inputs['style'], inputs['composition'], doc['session'])
+        verdict, metadata = review.artwork(source, artwork, inputs['referenced_image_paths'][1:], doc['style'], identity, doc['session'])
         return {'verdict':verdict, 'metadata':metadata}
 
 
@@ -80,7 +72,7 @@ def run_stage(job_id, attempt, stage):
         current = steps.get(stage)
         if current and current['status'] == 'completed':
             return current['result']['outcome']
-        if doc['status'] in ('ready','uncertain','awaiting_review','needs_photo','rejected','failed','composition_unavailable'):
+        if doc['status'] in ('ready','uncertain','awaiting_review','needs_photo','rejected','failed'):
             return 'stopped'
         if current:
             if current['status'] == 'running' and (datetime.now(timezone.utc)-current['started']).total_seconds() < 600:
@@ -117,18 +109,9 @@ def run_stage(job_id, attempt, stage):
         outcome = 'continue'
         if stage == 'checking_photo':
             v = result['verdict']
-            if not photo_usable(v):
-                doc.update(status='needs_photo', error=v['reason'] or 'Please choose a clearer photo with a recognizable pose and face.')
+            if not (v['usable'] and v['pet_count']==1 and v['species'].lower() in ('cat','dog') and v['face_visible'] and v['details_clear']):
+                doc.update(status='needs_photo', error='Please choose a clear photo of one cat or dog with its face visible.')
                 outcome = 'stopped'
-            elif result.get('unavailable'):
-                doc.update(status='composition_unavailable', pose_bucket=v['bucket'], error=result['unavailable'])
-                outcome = 'stopped'
-            else:
-                inputs = result['inputs']
-                doc.update(pose_bucket=v['bucket'], workflow_version=inputs['workflow_version'],
-                           composition_metadata={'pose_bucket':inputs['bucket'], 'workflow_version':inputs['workflow_version'],
-                               'catalog_version':inputs['catalog_version'], 'style_anchors':inputs['reference_files'],
-                               'reference_hashes':inputs['reference_hashes']})
         elif stage == 'checking_artwork':
             if not all(result['verdict'].get(k) is True for k in ART_FIELDS if k != 'reason'):
                 doc.update(status='awaiting_review')

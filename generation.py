@@ -12,7 +12,7 @@ import urllib.request
 
 import certifi
 from PIL import Image
-from minhwa_workflow.workflow import BUCKETS, photo_usable
+from minhwa_workflow.workflow import GARDENS
 
 IMAGE_SIZE = (2432, 3040)  # 4:5, both edges divisible by 16; no later enlargement.
 
@@ -102,14 +102,15 @@ class OpenAIImages:
         return raw, {'provider': 'openai', 'model': self.model, 'request_id': request_id,
                      'usage': result.get('usage'), 'quality': 'high', 'size': payload['size'],
                      'estimated_cost_usd': estimated_cost(self.model, result.get('usage')),
-                     'reference_processing': 'bamboo-painted-region-v1'}
+                     'reference_processing': 'curated-garden-references-v1'}
 
 
-PHOTO_FIELDS = {'usable': 'boolean',
-                'bucket': {'type': ['string', 'null'], 'enum': [*BUCKETS, None]},
-                'reason': 'string'}
-ART_FIELDS = {key: 'boolean' for key in ('likeness', 'markings', 'anatomy', 'painted',
-    'fresh_scene', 'garden', 'interaction', 'safe_margins', 'no_text')}
+PHOTO_FIELDS = {'usable': 'boolean', 'pet_count': 'integer', 'species': 'string',
+                'face_visible': 'boolean', 'details_clear': 'boolean',
+                'identity': 'string', 'unseen_features': 'string', 'reason': 'string'}
+ART_FIELDS = {key: 'boolean' for key in ('likeness', 'markings', 'anatomy', 'pose_fidelity',
+    'painted', 'fresh_scene', 'garden', 'motif_coherence', 'identity_dominance',
+    'safe_margins', 'no_text')}
 ART_FIELDS.update({'reason': 'string'})
 
 
@@ -118,7 +119,7 @@ class OpenAIReview:
         self.key, self.model = key, model
 
     def analyze(self, paths, prompt, fields, session):
-        schema = {'type': 'object', 'properties': {k: v if isinstance(v, dict) else {'type': v} for k, v in fields.items()},
+        schema = {'type': 'object', 'properties': {k: {'type': v} for k, v in fields.items()},
                   'required': list(fields), 'additionalProperties': False}
         content = [{'type': 'input_text', 'text': prompt}]
         content.extend({'type': 'input_image', 'image_url': image_url(p), 'detail': 'high'} for p in paths)
@@ -135,16 +136,8 @@ class OpenAIReview:
                            for c in o.get('content', []) if c.get('type') == 'output_text')
             verdict = json.loads(text)
             types = {'boolean': bool, 'integer': int, 'string': str}
-            if not isinstance(verdict, dict) or set(verdict) != set(fields):
+            if set(verdict) != set(fields) or any(type(verdict[k]) is not types[v] for k, v in fields.items()):
                 raise ValueError()
-            for k, field in fields.items():
-                if isinstance(field, dict):
-                    if verdict[k] not in field['enum']:
-                        raise ValueError()
-                elif type(verdict[k]) is not types[field]:
-                    raise ValueError()
-            if fields == PHOTO_FIELDS:
-                photo_usable(verdict)
             if any(len(v) > 4000 for v in verdict.values() if isinstance(v, str)):
                 raise ValueError()
         except (KeyError, TypeError, ValueError):
@@ -153,14 +146,19 @@ class OpenAIReview:
                          'estimated_cost_usd': estimated_cost(self.model, result.get('usage'))}
 
     def photo(self, source, session):
-        return self.analyze([source], """Classify this photo into exactly one pose bucket; do not describe the pet.
-usable is true only for one identifiable real cat or dog with a visible, sufficiently clear face. Reject multiple animals, illustrations, severe blur, or a hidden face.
-Buckets: standing_front, standing_profile, sitting_front, sitting_profile, reclining_front, reclining_profile, portrait_front, portrait_profile.
-Use portrait for head/chest crops or insufficient body evidence; otherwise choose the visible standing, sitting, or reclining posture. Front/profile follows the FACE, not the torso. Map three-quarter faces to the closest compatible view without requiring a large head turn. Never guess hidden posture.
-Return bucket null if unusable or no safe match. reason is empty on success; otherwise one short kind explanation, at most 300 characters. No breed, marking inventory, anatomy report, confidence score, or identity narrative.""", PHOTO_FIELDS, session)
+        return self.analyze([source], '''Check this photo for a single cat or dog portrait. usable is true only for exactly one identifiable cat or dog with a visible face and sufficiently clear features. Reject multiple animals, non-pets, illustrations, severe blur, or a hidden face. A partial body is fine if the face and identifying features are clear. Describe observable identity: ear silhouette, muzzle proportions, eye color only if visible, age cues, coat colors and distinctive patch positions. Distinguish the animal's anatomical left/right from image left/right. Do not guess breed or unseen features. List hidden features separately. reason is a short, kind customer-facing explanation if a better photo is needed; otherwise a short assessment.''', PHOTO_FIELDS, session)
 
-    def artwork(self, source, artwork, anchors, style, composition, session):
-        return self.analyze([source, artwork, *anchors], f"""Image 1 is the identity photo, image 2 is the generated painting, and the remaining {len(anchors)} images are the selected style and composition references, never identity references.
-Compare the painting directly to the original photo and every selected reference. The chosen garden is {style}. Required composition: {composition}
-Assess each criterion separately. likeness: same identifiable pet, ears, muzzle and age cues; markings: visible coat patches and colors preserved without borrowing reference animals' traits or inventing hidden identifying features; anatomy: coherent eyes, muzzle, limbs and paws, matching the required posture and framing; painted: pet and plants share matte pigment washes and ink contours, no photographic cutout or texture-filtered photo; fresh_scene: a fresh painted setting, not the source room/background, while preserving the selected pose category; garden: chosen peony/lotus setting with calm open paper; interaction: head and eye direction comply with the required composition (forward gaze for front buckets; believable butterfly sightline for profile buckets); safe_margins: ears and intentionally visible paws are not accidentally clipped, intentional head/chest framing is allowed for portrait buckets; no_text: no letters, signature, seal, watermark or frame.
-False if uncertain. Give concrete issues and a concise explanation. All criteria must pass for automatic release. The customer still gives final likeness approval.""", ART_FIELDS, session)
+    def artwork(self, source, artwork, anchors, style, identity, session):
+        try:
+            garden = GARDENS[style]
+        except KeyError:
+            raise ValueError('Unknown garden for artwork review.') from None
+        last_reference = len(anchors) + 2
+        return self.analyze([source, artwork, *anchors], f'''Image 1 is the customer identity and pose photo, image 2 is a newly generated painting, and images 3-{last_reference} are art references only, never identity references. Compare image 2 carefully with image 1 and use the remaining images only to assess Korean minhwa material, garden composition, palette, and spatial language.
+Identity observations: {identity}
+Selected garden: {garden['label']} / {garden['korean']}.
+Required garden evidence: {garden['review']}.
+
+Assess each criterion separately. likeness: unmistakably the same individual pet, including face geometry, ears, muzzle, eyes and age cues; markings: observable coat colors and patch locations match image 1 without borrowing a reference animal or inventing hidden traits; anatomy: coherent eyes, muzzle, limbs, paws and tail; pose_fidelity: preserves image 1's visible posture, head angle, gaze and crop rather than imitating an art reference or forcing interaction with a motif; painted: pet and garden share matte layered pigment, restrained barim and fine ink contours, with no photographic cutout or texture-filtered photo; fresh_scene: a wholly new painted garden rather than the source room or a copied reference; garden: the selected garden's required motifs are clearly present with calm open hanji; motif_coherence: no unrelated motif family, motifs are limited and culturally coherent, and no forced pet-to-fauna sightline is required; identity_dominance: the pet is the first focal point and motifs remain subordinate in scale, contrast, detail and placement; safe_margins: the recognizable silhouette and all intentionally visible ears, paws and tail are not accidentally clipped or obscured; no_text: no letters, signature, seal, watermark, promotional border or frame.
+
+False if uncertain. Give concrete issues and a concise explanation. All criteria must pass for automatic release to the customer. The customer still gives final likeness approval.''', ART_FIELDS, session)
